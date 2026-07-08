@@ -1,6 +1,31 @@
 const { app, BrowserWindow, ipcMain, globalShortcut } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
+const { execFile } = require('child_process');
+
+const EDGE_TTS = ['/home/orez/Music/speek/.venv/bin/edge-tts', 'edge-tts'];
+
+function speakToDataUri(text, voice) {
+  return new Promise((resolve) => {
+    const clean = String(text || '').replace(/\s+/g, ' ').trim().slice(0, 6000);
+    if (!clean) return resolve({ ok: false, error: 'empty' });
+    const out = path.join(os.tmpdir(), 'gmara-tts-' + Date.now() + '.mp3');
+    const v = voice === 'female' ? 'he-IL-HilaNeural' : 'he-IL-AvriNeural';
+    const tryBin = (i) => {
+      if (i >= EDGE_TTS.length) return resolve({ ok: false, error: 'edge-tts-missing' });
+      execFile(EDGE_TTS[i], ['--voice', v, '--text', clean, '--write-media', out], { timeout: 60000 }, (err) => {
+        if (err) return tryBin(i + 1);
+        try {
+          const b64 = fs.readFileSync(out).toString('base64');
+          fs.unlink(out, () => {});
+          resolve({ ok: true, uri: 'data:audio/mp3;base64,' + b64 });
+        } catch (e) { resolve({ ok: false, error: String(e.message || e) }); }
+      });
+    };
+    tryBin(0);
+  });
+}
 
 app.disableHardwareAcceleration();
 app.commandLine.appendSwitch('disable-gpu');
@@ -135,6 +160,7 @@ ipcMain.handle('sefaria:links', async (_e, ref) => {
 });
 
 ipcMain.handle('ai:findRefs', async (_e, question) => findRefs(question));
+ipcMain.handle('tts:speak', async (_e, text, voice) => speakToDataUri(text, voice));
 
 app.whenReady().then(() => {
   createWindow();

@@ -239,9 +239,13 @@ function makeMefBox(name, rawList, opts) {
   state.jumpTargets.set(name, det);
 
   const sum = document.createElement('summary');
-  sum.innerHTML = `<span>${name}</span><span class="sum-tools"><button class="enlarge" title="הגדל וקרא">⤢</button><span class="count">${list.length}</span></span>`;
+  sum.innerHTML = `<span>${name}</span><span class="sum-tools"><button class="mef-read" title="הקרא בקול">🔊</button><button class="enlarge" title="הגדל וקרא">⤢</button><span class="count">${list.length}</span></span>`;
   det.appendChild(sum);
   sum.querySelector('.enlarge').onclick = (e) => { e.preventDefault(); e.stopPropagation(); openRead(name, list, segs); };
+  sum.querySelector('.mef-read').onclick = (e) => {
+    e.preventDefault(); e.stopPropagation();
+    speak(list.map((ln) => flat(ln.he).map(stripHtml).join(' ')).join(' '));
+  };
 
   const body = document.createElement('div');
   body.className = 'mef-body';
@@ -657,6 +661,61 @@ function cycleTheme() {
   toast('צבע: ' + ({ blue: 'כחול', red: 'אדום', classic: 'קלאסי' }[next]));
 }
 
+/* ── read-aloud (Hebrew TTS via edge-tts, browser fallback) ── */
+const tts = { audio: null, on: false, voice: 'male' };
+
+function currentReadText() {
+  const sel = window.getSelection ? String(window.getSelection()) : '';
+  if (sel && sel.trim().length > 1) return sel.trim();
+  const segs = state.view === 'daf' ? state.gemaraSegs : state.seferSegs;
+  return flat(segs).map(stripHtml).join(' ');
+}
+
+function setSpeaking(on) {
+  tts.on = on;
+  const b = $('readBtn');
+  if (b) { b.textContent = on ? '⏹ עצור' : '🔊 הקרא'; b.classList.toggle('reading', on); }
+}
+
+function stopSpeak() {
+  if (tts.audio) { try { tts.audio.pause(); } catch (e) {} tts.audio = null; }
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+  setSpeaking(false);
+}
+
+async function speak(text) {
+  text = (text || '').trim();
+  if (!text) { toast('אין טקסט להקראה'); return; }
+  stopSpeak();
+  toast('מכין הקראה…', 1400);
+  let uri = null;
+  if (window.gmara && window.gmara.tts) {
+    const r = await window.gmara.tts(text, tts.voice);
+    if (r && r.ok) uri = r.uri;
+  }
+  if (uri) {
+    tts.audio = new Audio(uri);
+    tts.audio.onended = () => setSpeaking(false);
+    tts.audio.onerror = () => { setSpeaking(false); toast('שגיאת השמעה'); };
+    tts.audio.play().then(() => setSpeaking(true)).catch(() => toast('לא ניתן להשמיע'));
+  } else if (window.speechSynthesis) {
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'he-IL';
+    u.onend = () => setSpeaking(false);
+    window.speechSynthesis.speak(u);
+    setSpeaking(true);
+  } else {
+    toast('הקראה אינה זמינה כאן');
+  }
+}
+
+function toggleRead() { if (tts.on) stopSpeak(); else speak(currentReadText()); }
+function toggleVoice() {
+  tts.voice = tts.voice === 'male' ? 'female' : 'male';
+  $('voiceBtn').textContent = tts.voice === 'male' ? '♂' : '♀';
+  toast('קול: ' + (tts.voice === 'male' ? 'גבר (אברי)' : 'אישה (הילה)'));
+}
+
 let dafScale = 1;
 function setDafScale(v) {
   dafScale = Math.max(0.7, Math.min(2.2, v));
@@ -696,6 +755,8 @@ function init() {
   $('zoomIn').addEventListener('click', () => setDafScale(dafScale + 0.15));
   $('zoomOut').addEventListener('click', () => setDafScale(dafScale - 0.15));
   $('focusBtn').addEventListener('click', toggleFocus);
+  $('readBtn').addEventListener('click', toggleRead);
+  $('voiceBtn').addEventListener('click', toggleVoice);
   $('call-close').addEventListener('click', closeCall);
   $('join-btn').addEventListener('click', joinCall);
   $('fsBtn').addEventListener('click', () => toast('מסך מלא: F11'));

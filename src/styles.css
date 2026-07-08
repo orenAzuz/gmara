@@ -106,8 +106,15 @@ select, #topbar button, #room-input {
 #topbar button:hover { background: #fff; }
 #callBtn { background: var(--title); color: #fff; border-color: rgba(0,0,0,.3); }
 #callBtn:hover { filter: brightness(1.12); }
-#fontBtn, #themeBtn, #fsBtn, #zoomIn, #zoomOut, #focusBtn { background: var(--gold); color: #22150a; font-weight: 700; }
+#fontBtn, #themeBtn, #fsBtn, #zoomIn, #zoomOut, #focusBtn, #readBtn, #voiceBtn { background: var(--gold); color: #22150a; font-weight: 700; }
 body.focus-daf #focusBtn { background: var(--title); color: #fff; }
+#readBtn.reading { background: var(--title); color: #fff; animation: pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .6; } }
+.mef-read {
+  background: transparent; border: 1px solid var(--rule); color: var(--title);
+  border-radius: 5px; font-size: 12px; padding: 0 5px; cursor: pointer; line-height: 1.5;
+}
+.mef-read:hover { background: color-mix(in srgb, var(--gold) 30%, transparent); }
 
 /* ── search box + results ────────────────────── */
 .search-wrap { position: relative; }
