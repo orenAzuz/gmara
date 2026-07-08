@@ -17,47 +17,50 @@
   --shadow: rgba(20, 30, 60, 0.22);
 }
 
-/* ── Themes ─────────────────────────────────── */
+/* ── Themes — paper stays warm parchment in all; theme tints the frame only ── */
 body[data-theme="blue"] {
-  --page-bg: #e9edf4;
-  --col-bg: #f7f9fc;
-  --col-center-bg: #ffffff;
-  --frame: #1e3a5f;
-  --band: #22497a;
-  --topbar-a: #1b3357;
-  --topbar-b: #10203a;
-  --title: #a51d2d;
-  --gold: #c8a24a;
-  --ink: #14213d;
-  --ink-soft: #4a5a76;
-  --rule: #9fb2cd;
+  --desk: #b9a67f;
+  --page-bg: #cdbb95;
+  --col-bg: #e8dab6;
+  --col-center-bg: #efe3c4;
+  --frame: #1f3a5c;
+  --band: #24466f;
+  --topbar-a: #22405f;
+  --topbar-b: #14283f;
+  --title: #8f1d24;
+  --gold: #b0872f;
+  --ink: #2a1f10;
+  --ink-soft: #5c4a2c;
+  --rule: #b39a63;
 }
 body[data-theme="red"] {
-  --page-bg: #f4ebe7;
-  --col-bg: #fdf7f4;
-  --col-center-bg: #fffcfa;
+  --desk: #b9a67f;
+  --page-bg: #ccb896;
+  --col-bg: #e9dab6;
+  --col-center-bg: #f0e4c6;
   --frame: #6d1a1a;
-  --band: #7d2222;
-  --topbar-a: #6b1717;
+  --band: #7d2323;
+  --topbar-a: #6b1919;
   --topbar-b: #3e0d0d;
-  --title: #123a63;
-  --gold: #c8a24a;
-  --ink: #351414;
-  --ink-soft: #6a4a44;
-  --rule: #cfa9a0;
+  --title: #6d1a1a;
+  --gold: #b0872f;
+  --ink: #2a1f10;
+  --ink-soft: #5c4a2c;
+  --rule: #c0a06a;
 }
 body[data-theme="classic"] {
-  --page-bg: #f4ecd8;
-  --col-bg: #fbf6e9;
-  --col-center-bg: #fffdf5;
+  --desk: #b09b70;
+  --page-bg: #c6b183;
+  --col-bg: #e7d6ac;
+  --col-center-bg: #efe1bd;
   --frame: #5a3b16;
   --band: #6b4a20;
   --topbar-a: #3a2a15;
   --topbar-b: #2a1c0c;
   --title: #7a1f1f;
-  --gold: #b8860b;
-  --ink: #2b1d0e;
-  --ink-soft: #5a4326;
+  --gold: #a9791a;
+  --ink: #281c0c;
+  --ink-soft: #574327;
   --rule: #b89b64;
 }
 
@@ -106,61 +109,89 @@ select, #topbar button, #room-input {
 
 /* ── Scroll area ─────────────────────────────── */
 #daf-wrap { position: relative; height: calc(100% - 58px); }
-#page-scroll { height: 100%; overflow-y: auto; padding: 22px 22px 60px; }
+#page-scroll {
+  height: 100%; overflow-y: auto; padding: 26px 22px 60px;
+  background:
+    radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--desk) 70%, #fff) 0%, var(--desk) 60%),
+    var(--desk);
+}
 
 /* ── The daf (tzuras hadaf) ──────────────────── */
 #daf-frame {
-  max-width: 1180px; margin: 0 auto;
+  max-width: 1120px; margin: 0 auto;
   background: var(--col-bg);
-  border: 3px solid var(--frame);
-  border-radius: 4px;
-  box-shadow: 0 0 0 3px var(--col-bg), 0 0 0 5px var(--frame), 0 6px 24px var(--shadow);
+  border: 2px solid var(--frame);
+  padding: 5px;
+  box-shadow: inset 0 0 0 1px var(--gold), inset 0 0 0 4px var(--col-bg),
+    inset 0 0 60px color-mix(in srgb, var(--ink) 8%, transparent),
+    0 10px 30px rgba(30, 20, 5, .4);
   overflow: hidden;
 }
+#daf-inner { border: 1.5px solid var(--frame); overflow: hidden; }
+
 #daf-banner {
   display: flex; align-items: center; justify-content: space-between;
-  background: var(--band); color: #fff;
-  padding: 6px 18px; border-bottom: 2px solid var(--gold);
+  background: linear-gradient(180deg, var(--col-center-bg), var(--col-bg));
+  color: var(--title);
+  padding: 4px 16px; border-bottom: 1.5px solid var(--frame);
 }
-.banner-mid { font-size: 22px; font-weight: 800; letter-spacing: .5px; color: #fff; }
+.banner-mid { font-size: 26px; font-weight: 800; letter-spacing: 1px; color: var(--title); font-family: var(--serif); }
 .corner {
-  font-size: 20px; font-weight: 800; color: var(--gold);
-  min-width: 60px; text-align: center;
+  font-size: 22px; font-weight: 800; color: var(--frame);
+  min-width: 64px; text-align: center;
 }
 
 #daf-grid {
   display: grid;
-  grid-template-columns: 1fr 1.9fr 1fr;
-  min-height: 62vh;
+  grid-template-columns: 1fr 1.5fr 1fr;
+  min-height: 60vh;
+  background: var(--col-bg);
 }
 .col { display: flex; flex-direction: column; overflow: hidden; background: var(--col-bg); }
 .col.center { background: var(--col-center-bg); }
-.col.side + .col.center { border-inline-start: 2px solid var(--rule); }
-#col-rashi { border-inline-start: 2px solid var(--rule); }
+#col-gemara { border-inline: 1.5px solid var(--frame); }
 
 .col-title {
-  margin: 0; padding: 6px 12px; text-align: center;
-  font-size: 18px; color: var(--title);
-  background: color-mix(in srgb, var(--band) 12%, transparent);
+  margin: 0; padding: 5px 12px; text-align: center;
+  font-size: 17px; color: var(--title); font-weight: 700;
+  background: color-mix(in srgb, var(--frame) 8%, transparent);
   border-bottom: 1px solid var(--rule);
 }
 .col-body {
-  padding: 16px 18px; overflow-y: auto; flex: 1;
-  line-height: 1.85; text-align: justify;
-  max-height: 68vh;
+  padding: 14px 16px; overflow-y: auto; flex: 1;
+  line-height: 1.8; text-align: justify;
+  max-height: 66vh;
+  text-shadow: 0 0 1px color-mix(in srgb, var(--ink) 15%, transparent);
 }
-.center .col-body { font-size: 23px; color: var(--ink); font-weight: 500; padding: 20px 24px; }
-.side .col-body { font-size: 17px; color: var(--ink-soft); line-height: 1.7; }
+.center .col-body { font-size: 23px; color: var(--ink); font-weight: 500; padding: 18px 22px; line-height: 1.75; }
+.side .col-body { font-size: 16px; color: var(--ink); line-height: 1.62; }
 .ktav-rashi { font-family: var(--rashi); }
+
+/* ornamental opening word (perek / masechta start) */
+.incipit {
+  display: block; text-align: center; margin: 2px auto 14px;
+  padding: 8px 10px; max-width: 70%;
+  font-family: var(--serif); font-size: 30px; font-weight: 800; color: var(--ink);
+  border: 2px solid var(--frame);
+  box-shadow: inset 0 0 0 2px var(--col-center-bg), inset 0 0 0 3px var(--frame);
+  background: var(--col-center-bg);
+  letter-spacing: 3px;
+}
 
 .seg { display: inline; }
 .seg-anchor { cursor: default; border-radius: 3px; }
 .center .seg { margin-inline-end: 3px; }
-.seg.flash { background: color-mix(in srgb, var(--gold) 55%, #fff); box-shadow: 0 0 0 4px color-mix(in srgb, var(--gold) 55%, #fff); }
-.center .col-body > .seg:first-child::first-letter {
-  font-size: 1.15em; font-weight: 800; color: var(--title);
+.seg.flash { background: color-mix(in srgb, var(--gold) 60%, transparent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--gold) 60%, transparent); }
+.side .comment { margin-bottom: 8px; }
+
+/* folio strip at the bottom of the daf */
+#daf-footer {
+  display: flex; align-items: center; justify-content: center; gap: 26px;
+  padding: 4px 16px; font-family: var(--serif);
+  color: var(--title); font-size: 16px; font-weight: 700;
+  background: linear-gradient(0deg, var(--col-center-bg), var(--col-bg));
+  border-top: 1.5px solid var(--frame);
 }
-.side .comment { margin-bottom: 10px; }
 
 /* ── Mefarshim / Poskim sections on the page ─── */
 .sections { max-width: 1180px; margin: 20px auto 0; }

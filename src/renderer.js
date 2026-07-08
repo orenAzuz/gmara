@@ -85,6 +85,8 @@ async function loadDaf() {
   $('banner-mid').textContent = state.masechet.he;
   $('corner-r').textContent = `${lbl.daf}${lbl.amud === 'א' ? '.' : ':'}`;
   $('corner-l').textContent = `${lbl.daf}${lbl.amud === 'א' ? '.' : ':'}`;
+  $('footer-masechet').textContent = state.masechet.he;
+  $('footer-daf').textContent = lbl.full;
 
   const gemaraRef = `${en} ${daf}`;
   const [gem, rashi, tos, links] = await Promise.all([
@@ -115,10 +117,24 @@ async function loadDaf() {
   $('loading').classList.add('hidden');
 }
 
+function firstWord(html) {
+  const t = stripHtml(html);
+  return (t.split(/\s+/)[0] || '').replace(/[.,:;׃]$/, '');
+}
+
 function renderGemara(data) {
   state.gemaraSegs = data.he || [];
   const body = $('gemara-body');
   body.innerHTML = '';
+  if (state.daf === '2a' && state.gemaraSegs.length) {
+    const w = firstWord(state.gemaraSegs[0]);
+    if (w) {
+      const box = document.createElement('div');
+      box.className = 'incipit';
+      box.textContent = w;
+      body.appendChild(box);
+    }
+  }
   state.gemaraSegs.forEach((seg, i) => {
     const span = document.createElement('span');
     span.className = 'seg seg-anchor';
