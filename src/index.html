@@ -43,6 +43,7 @@
     <div class="actions">
       <button id="fontBtn" title="החלף כתב רש״י / מרובע">אות רש״י</button>
       <button id="themeBtn" title="החלף צבע">🎨</button>
+      <button id="signInBtn" title="התחברות">👤 התחבר</button>
       <button id="callBtn" title="שיחת חברותא">📹 חברותא</button>
       <button id="fsBtn" title="מסך מלא (F11)">⛶</button>
     </div>
@@ -138,6 +139,40 @@
     </div>
   </div>
 
+  <div id="chavrusa-panel" class="side-panel hidden">
+    <div class="panel-head">
+      <span>חברותא</span>
+      <button id="chavrusa-close" title="סגור">✕</button>
+    </div>
+    <div class="panel-body">
+      <div id="chavrusa-auth"></div>
+      <div class="panel-sub">לומדים מחוברים עכשיו</div>
+      <div id="online-list"><div class="muted">התחבר כדי לראות מי לומד ולפתוח חברותא.</div></div>
+      <button id="jitsiFallback" class="ghost-btn">פתח חדר וידאו מהיר (Jitsi)</button>
+    </div>
+  </div>
+
+  <div id="incoming-call" class="hidden">
+    <div class="incoming-inner">
+      <div id="incoming-text"></div>
+      <div class="incoming-actions">
+        <button id="incoming-accept" class="accept">✓ ענה</button>
+        <button id="incoming-decline" class="decline">✕ דחה</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="call-overlay" class="hidden">
+    <video id="remoteVideo" autoplay playsinline></video>
+    <video id="localVideo" autoplay playsinline muted></video>
+    <div id="call-status">מתקשר…</div>
+    <div class="call-controls">
+      <button id="btn-mic" title="מיקרופון">🎤</button>
+      <button id="btn-cam" title="מצלמה">🎥</button>
+      <button id="btn-hangup" class="hangup" title="נתק">📵 נתק</button>
+    </div>
+  </div>
+
   <div id="call-modal" class="modal hidden">
     <div class="modal-inner">
       <div class="modal-head">
@@ -160,6 +195,13 @@
 
   <script src="data.js"></script>
   <script src="api.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
+  <script src="auth.js"></script>
+  <script src="presence.js"></script>
+  <script src="call.js"></script>
   <script src="renderer.js"></script>
 </body>
 </html>

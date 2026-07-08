@@ -339,6 +339,68 @@ body.square-comment .read-body { font-family: var(--serif); }
 .read-dh:hover { text-decoration: underline; }
 .read-dh .n { color: var(--gold); margin-inline-end: 5px; }
 
+/* ── Chavrusa panel ──────────────────────────── */
+.side-panel {
+  position: absolute; top: 58px; bottom: 0; inset-inline-end: 0;
+  width: 360px; background: var(--col-bg);
+  border-inline-start: 3px solid var(--gold);
+  box-shadow: -4px 0 18px var(--shadow);
+  z-index: 35; display: flex; flex-direction: column;
+}
+.side-panel.hidden { display: none; }
+.panel-head {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 16px; background: var(--band); color: #fff;
+  font-size: 19px; font-weight: 700; border-bottom: 2px solid var(--gold);
+}
+.panel-head button { background: none; border: none; color: #fff; font-size: 20px; cursor: pointer; }
+.panel-body { padding: 14px; overflow-y: auto; flex: 1; }
+.panel-sub { font-weight: 700; color: var(--title); margin: 14px 0 8px; border-bottom: 1px solid var(--rule); padding-bottom: 4px; }
+.muted { color: var(--ink-soft); font-size: 14px; }
+#chavrusa-auth { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+#chavrusa-auth img { width: 34px; height: 34px; border-radius: 50%; }
+#chavrusa-auth button { background: var(--title); color: #fff; border: none; border-radius: 6px; padding: 6px 12px; cursor: pointer; font-family: var(--serif); }
+.online-row { display: flex; align-items: center; justify-content: space-between; padding: 9px 4px; border-bottom: 1px solid var(--rule); }
+.online-row .who { font-size: 15px; font-weight: 700; }
+.online-row .daf { font-size: 12px; color: var(--ink-soft); }
+.online-row button { background: var(--title); color: #fff; border: none; border-radius: 6px; padding: 5px 12px; cursor: pointer; }
+.ghost-btn { margin-top: 18px; width: 100%; background: transparent; border: 1px solid var(--rule); color: var(--ink-soft); border-radius: 6px; padding: 8px; cursor: pointer; font-family: var(--serif); }
+
+/* ── Incoming call ───────────────────────────── */
+#incoming-call { position: absolute; top: 70px; inset-inline-end: 20px; z-index: 60; }
+#incoming-call.hidden { display: none; }
+.incoming-inner {
+  background: var(--topbar-b); color: #f4f1ea; border: 2px solid var(--gold);
+  border-radius: 12px; padding: 16px 20px; box-shadow: 0 6px 22px rgba(0,0,0,.5);
+  animation: ring 1s ease-in-out infinite;
+}
+@keyframes ring { 0%,100% { transform: scale(1); } 50% { transform: scale(1.03); } }
+.incoming-actions { display: flex; gap: 10px; margin-top: 12px; }
+.incoming-actions button { border: none; border-radius: 8px; padding: 8px 18px; font-size: 15px; cursor: pointer; font-family: var(--serif); }
+.accept { background: #1c7a3a; color: #fff; }
+.decline { background: #922020; color: #fff; }
+
+/* ── Native call overlay (Zoom-style) ────────── */
+#call-overlay { position: absolute; inset: 0; background: #0c0f14; z-index: 70; }
+#call-overlay.hidden { display: none; }
+#remoteVideo { width: 100%; height: 100%; object-fit: contain; background: #0c0f14; }
+#localVideo {
+  position: absolute; bottom: 96px; inset-inline-end: 22px;
+  width: 220px; height: 150px; object-fit: cover;
+  border: 2px solid var(--gold); border-radius: 10px; background: #000;
+}
+#call-status {
+  position: absolute; top: 18px; left: 50%; transform: translateX(-50%);
+  color: #fff; background: rgba(0,0,0,.55); padding: 6px 18px; border-radius: 20px; font-size: 16px;
+}
+.call-controls { position: absolute; bottom: 22px; left: 50%; transform: translateX(-50%); display: flex; gap: 14px; }
+.call-controls button {
+  width: 58px; height: 58px; border-radius: 50%; border: none; font-size: 22px;
+  cursor: pointer; background: #2a2f38; color: #fff;
+}
+.call-controls button.off { background: #cc2b2b; }
+.call-controls .hangup { width: auto; padding: 0 22px; border-radius: 29px; background: #cc2b2b; font-size: 16px; font-family: var(--serif); }
+
 /* ── Toast ───────────────────────────────────── */
 .toast {
   position: absolute; bottom: 24px; inset-inline-start: 50%; transform: translateX(50%);

@@ -145,6 +145,7 @@ async function loadDaf() {
   $('page-scroll').scrollTop = 0;
   $('gemara-body').scrollTop = 0;
   $('loading').classList.add('hidden');
+  if (haveFB() && Auth.uid) { try { Presence.setDaf(state.masechet.he, state.daf); } catch (e) {} }
 }
 
 function firstWord(html) {
@@ -452,6 +453,105 @@ function closeCall() {
   $('call-modal').classList.add('hidden');
 }
 
+/* ── chavrusa: accounts + presence + native call ── */
+function haveFB() { return typeof Auth !== 'undefined' && typeof window.GmaraFB !== 'undefined' && !!window.GmaraFB.app; }
+
+function doSignIn() {
+  if (!haveFB()) { toast('מנוע החברותא לא נטען (בדוק אינטרנט)'); return; }
+  Auth.signIn().catch(() => Auth.signInAnonymously().catch(() => toast('כניסה נכשלה — ודא ש-Google/אנונימי מופעלים ב-Firebase')));
+}
+
+function renderAuth(user) {
+  const box = $('chavrusa-auth');
+  if (user) {
+    box.innerHTML = `${user.photoURL ? `<img src="${user.photoURL}" referrerpolicy="no-referrer">` : ''}<span>${user.displayName || 'אורח'}</span><button id="signOutBtn">התנתק</button>`;
+    box.querySelector('#signOutBtn').onclick = () => Auth.signOut();
+    $('signInBtn').textContent = '👤 ' + (user.displayName ? user.displayName.split(' ')[0] : 'מחובר');
+  } else {
+    box.innerHTML = `<button id="btnGoogle">התחבר עם Google</button><button id="btnAnon">כניסה כאורח</button>`;
+    box.querySelector('#btnGoogle').onclick = doSignIn;
+    box.querySelector('#btnAnon').onclick = () => { if (haveFB()) Auth.signInAnonymously().catch(() => toast('כניסה נכשלה')); };
+    $('signInBtn').textContent = '👤 התחבר';
+    $('online-list').innerHTML = '<div class="muted">התחבר כדי לראות מי לומד ולפתוח חברותא.</div>';
+  }
+}
+
+function renderOnline(list) {
+  const box = $('online-list');
+  const me = (typeof Auth !== 'undefined') ? Auth.uid : null;
+  const others = (list || []).filter((x) => x.uid !== me);
+  if (!others.length) { box.innerHTML = '<div class="muted">אין עדיין לומדים אחרים מחוברים.</div>'; return; }
+  box.innerHTML = '';
+  others.forEach((o) => {
+    const row = document.createElement('div');
+    row.className = 'online-row';
+    const daf = o.currentMasechet ? `${o.currentMasechet} ${o.currentDaf || ''}` : 'ללא דף';
+    row.innerHTML = `<span><span class="who">${o.displayName || 'אורח'}</span><br><span class="daf">${daf}</span></span>`;
+    const b = document.createElement('button');
+    b.textContent = '📹 התקשר';
+    b.onclick = () => startCall(o.uid, o.displayName);
+    row.appendChild(b);
+    box.appendChild(row);
+  });
+}
+
+async function startCall(uid, name) {
+  if (!haveFB() || !Auth.uid) { toast('התחבר תחילה'); return; }
+  openCallOverlay('מתקשר ל' + (name || 'חברותא') + '…');
+  try {
+    await Call.start(uid, $('localVideo'), $('remoteVideo'), { masechet: state.masechet.he, daf: state.daf });
+  } catch (e) { toast('שיחה נכשלה: ' + (e.message || e)); closeCallOverlay(); }
+}
+
+function openCallOverlay(status) {
+  $('call-status').textContent = status || '';
+  $('call-overlay').classList.remove('hidden');
+  $('chavrusa-panel').classList.add('hidden');
+}
+function closeCallOverlay() {
+  $('call-overlay').classList.add('hidden');
+  try { $('remoteVideo').srcObject = null; $('localVideo').srcObject = null; } catch (e) {}
+  ['btn-mic', 'btn-cam'].forEach((id) => $(id).classList.remove('off'));
+}
+
+function toggleTrack(kind, btn) {
+  const ms = $('localVideo').srcObject;
+  if (!ms) return;
+  ms.getTracks().filter((t) => t.kind === kind).forEach((t) => { t.enabled = !t.enabled; btn.classList.toggle('off', !t.enabled); });
+}
+
+function showIncoming(inv) {
+  $('incoming-text').textContent = `${inv.fromName || 'חברותא'} מזמין אותך ללמוד${inv.masechet ? ' — ' + inv.masechet + ' ' + (inv.daf || '') : ''}`;
+  $('incoming-call').classList.remove('hidden');
+  $('incoming-accept').onclick = async () => {
+    $('incoming-call').classList.add('hidden');
+    openCallOverlay('מתחבר…');
+    try { await Call.answer(inv.callId, $('localVideo'), $('remoteVideo')); }
+    catch (e) { toast('מענה נכשל'); closeCallOverlay(); }
+  };
+  $('incoming-decline').onclick = () => { $('incoming-call').classList.add('hidden'); Call.decline(inv.callId); };
+}
+
+function initChavrusa() {
+  $('callBtn').addEventListener('click', () => $('chavrusa-panel').classList.toggle('hidden'));
+  $('chavrusa-close').addEventListener('click', () => $('chavrusa-panel').classList.add('hidden'));
+  $('signInBtn').addEventListener('click', () => { $('chavrusa-panel').classList.remove('hidden'); if (!haveFB()) toast('מנוע החברותא לא נטען'); });
+  $('jitsiFallback').addEventListener('click', () => { $('chavrusa-panel').classList.add('hidden'); openCall(); });
+  $('btn-hangup').addEventListener('click', () => { if (typeof Call !== 'undefined') try { Call.hangup(); } catch (e) {} closeCallOverlay(); });
+  $('btn-mic').addEventListener('click', () => toggleTrack('audio', $('btn-mic')));
+  $('btn-cam').addEventListener('click', () => toggleTrack('video', $('btn-cam')));
+
+  if (!haveFB()) { renderAuth(null); return; }
+  Auth.onUser((user) => { renderAuth(user); if (user) Presence.setDaf(state.masechet.he, state.daf); });
+  Presence.online(renderOnline);
+  Call.listenForInvites(showIncoming);
+  Call.onState((s) => {
+    if (s === 'connected') $('call-status').textContent = 'מחובר ✓';
+    else if (s === 'declined') { toast('השיחה נדחתה'); closeCallOverlay(); }
+    else if (s === 'ended' || s === 'disconnected' || s === 'failed') closeCallOverlay();
+  });
+}
+
 /* ── toggles ─────────────────────────────────── */
 function toggleFont() {
   document.body.classList.toggle('square-comment');
@@ -485,10 +585,10 @@ function init() {
 
   $('fontBtn').addEventListener('click', toggleFont);
   $('themeBtn').addEventListener('click', cycleTheme);
-  $('callBtn').addEventListener('click', openCall);
   $('call-close').addEventListener('click', closeCall);
   $('join-btn').addEventListener('click', joinCall);
   $('fsBtn').addEventListener('click', () => toast('מסך מלא: F11'));
+  initChavrusa();
 
   $('read-close').addEventListener('click', closeRead);
   $('read-bigger').addEventListener('click', () => setReadFS(readFS + 2));
