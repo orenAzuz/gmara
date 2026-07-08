@@ -117,7 +117,7 @@ select, #topbar button, #room-input {
 }
 
 /* ── The daf (tzuras hadaf) ──────────────────── */
-#daf-frame {
+.daf-frame {
   max-width: 1120px; margin: 0 auto;
   background: var(--col-bg);
   border: 2px solid var(--frame);
@@ -127,9 +127,9 @@ select, #topbar button, #room-input {
     0 10px 30px rgba(30, 20, 5, .4);
   overflow: hidden;
 }
-#daf-inner { border: 1.5px solid var(--frame); overflow: hidden; }
+.daf-inner { border: 1.5px solid var(--frame); overflow: hidden; }
 
-#daf-banner {
+.daf-banner {
   display: flex; align-items: center; justify-content: space-between;
   background: linear-gradient(180deg, var(--col-center-bg), var(--col-bg));
   color: var(--title);
@@ -191,7 +191,7 @@ select, #topbar button, #room-input {
 .side .comment { margin-bottom: 8px; }
 
 /* folio strip at the bottom of the daf */
-#daf-footer {
+.daf-footer {
   display: flex; align-items: center; justify-content: center; gap: 26px;
   padding: 4px 16px; font-family: var(--serif);
   color: var(--title); font-size: 16px; font-weight: 700;
@@ -200,7 +200,7 @@ select, #topbar button, #room-input {
 }
 
 /* ── Otzar: daf centered, mefarshim wrapping the outer margins ── */
-#daf-stage {
+#daf-stage, #sefer-stage {
   display: grid;
   grid-template-columns: minmax(190px, 1fr) minmax(0, 1140px) minmax(190px, 1fr);
   align-items: start;
@@ -208,7 +208,16 @@ select, #topbar button, #room-input {
   max-width: 1580px;
   margin: 0 auto;
 }
-#daf-stage #daf-frame { max-width: none; margin: 0; }
+#daf-stage .daf-frame, #sefer-stage .daf-frame { max-width: none; margin: 0; }
+#sefer-view.hidden { display: none; }
+.navc {
+  background: transparent; border: 1px solid var(--gold); color: var(--gold);
+  border-radius: 6px; font-size: 18px; cursor: pointer; padding: 0 10px; font-weight: 800;
+}
+.navc:hover { background: color-mix(in srgb, var(--gold) 25%, transparent); }
+#sefer-main { max-height: 72vh; font-size: 20px; color: var(--ink); line-height: 1.8; }
+#sefer-main .seg { display: block; margin-bottom: 10px; }
+#sefer-main .seg.flash { background: color-mix(in srgb, var(--gold) 60%, transparent); }
 .otzar-margin { display: flex; flex-direction: column; gap: 12px; }
 .otzar-margin:empty { display: none; }
 

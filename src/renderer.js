@@ -6,7 +6,16 @@ const state = {
   dapim: [],
   gemaraSegs: [],
   jumpTargets: new Map(),
-  jitsi: null
+  jitsi: null,
+  view: 'daf',
+  seferSegs: [],
+  seferNav: { prev: null, next: null }
+};
+
+const WORKS = {
+  rif: { he: 'רי״ף', start: (en) => `Rif ${en} 2a` },
+  rosh: { he: 'פסקי הרא״ש', start: (en) => `Rosh on ${en} 1:1` },
+  maharsha: { he: 'מהרש״א', start: (en) => `Chidushei Halachot on ${en} 2a` }
 };
 
 const THEMES = ['blue', 'red', 'classic'];
@@ -201,7 +210,7 @@ function buildSections(links) {
   const right = $('otzar-right'), left = $('otzar-left');
   right.innerHTML = ''; left.innerHTML = '';
   mefNames.forEach((name, i) => {
-    (i % 2 === 0 ? right : left).appendChild(makeMefBox(name, mef.get(name), true));
+    (i % 2 === 0 ? right : left).appendChild(makeMefBox(name, mef.get(name), { open: true }));
   });
   $('mefarshim-wrap').style.display = 'none';
 
@@ -220,23 +229,26 @@ function sortMefarshim(arr) {
   });
 }
 
-function makeMefBox(name, rawList, open) {
+function makeMefBox(name, rawList, opts) {
+  opts = opts || {};
+  const segs = opts.segs || state.gemaraSegs;
+  const onJump = opts.onJump || flashSegment;
   const list = rawList.slice().sort((a, b) => (segNumOf(a.anchorRef) || 0) - (segNumOf(b.anchorRef) || 0));
   const det = document.createElement('details');
   det.className = 'mef';
-  if (open) det.open = true;
+  if (opts.open) det.open = true;
   state.jumpTargets.set(name, det);
 
   const sum = document.createElement('summary');
   sum.innerHTML = `<span>${name}</span><span class="sum-tools"><button class="enlarge" title="הגדל וקרא">⤢</button><span class="count">${list.length}</span></span>`;
   det.appendChild(sum);
-  sum.querySelector('.enlarge').onclick = (e) => { e.preventDefault(); e.stopPropagation(); openRead(name, list); };
+  sum.querySelector('.enlarge').onclick = (e) => { e.preventDefault(); e.stopPropagation(); openRead(name, list, segs); };
 
   const body = document.createElement('div');
   body.className = 'mef-body';
   list.forEach((ln, i) => {
     const segN = segNumOf(ln.anchorRef);
-    const gemHtml = segN && state.gemaraSegs[segN - 1] ? state.gemaraSegs[segN - 1] : '';
+    const gemHtml = segN && segs[segN - 1] ? segs[segN - 1] : '';
     const dh = snippet(gemHtml) || ('סימן ' + (segN || '?'));
     const c = document.createElement('div');
     c.className = 'mef-comment';
@@ -244,19 +256,20 @@ function makeMefBox(name, rawList, open) {
     c.innerHTML =
       `<span class="dh"><span class="n">${i + 1}.</span>${dh} …</span>` +
       `<div class="body">${boldDH(parts.join(' '))}</div>`;
-    c.querySelector('.dh').onclick = () => flashSegment(segN);
+    c.querySelector('.dh').onclick = () => onJump(segN);
     body.appendChild(c);
   });
   det.appendChild(body);
   return det;
 }
 
-function openRead(name, rawList) {
+function openRead(name, rawList, segs) {
+  segs = segs || state.gemaraSegs;
   const list = rawList.slice().sort((a, b) => (segNumOf(a.anchorRef) || 0) - (segNumOf(b.anchorRef) || 0));
   $('read-title').textContent = name;
   $('read-body').innerHTML = list.map((ln, i) => {
     const segN = segNumOf(ln.anchorRef);
-    const gemHtml = segN && state.gemaraSegs[segN - 1] ? state.gemaraSegs[segN - 1] : '';
+    const gemHtml = segN && segs[segN - 1] ? segs[segN - 1] : '';
     const dh = snippet(gemHtml, 8) || ('סימן ' + (segN || '?'));
     const parts = flat(ln.he).length ? flat(ln.he) : ['(אין טקסט)'];
     return `<div class="read-comment"><div class="read-dh" data-seg="${segN || ''}"><span class="n">${i + 1}.</span>${dh} …</div>` +
@@ -282,7 +295,7 @@ function sortPoskim(arr) {
 
 function renderSectionGroup(container, map, names) {
   container.innerHTML = '';
-  names.forEach((name) => container.appendChild(makeMefBox(name, map.get(name), false)));
+  names.forEach((name) => container.appendChild(makeMefBox(name, map.get(name), { open: false })));
 }
 
 function buildDropdown(mefNames, posNames) {
@@ -323,6 +336,77 @@ function flashSegment(n) {
   el.scrollIntoView({ behavior: 'smooth', block: 'center' });
   el.classList.add('flash');
   setTimeout(() => el.classList.remove('flash'), 1800);
+}
+
+/* ── sefer view (back-of-volume works) ───────── */
+function switchView(view) {
+  state.view = view;
+  const isDaf = view === 'daf';
+  $('daf-stage').style.display = isDaf ? '' : 'none';
+  $('mefarshim-wrap').style.display = isDaf ? '' : 'none';
+  $('poskim-wrap').style.display = isDaf ? '' : 'none';
+  $('sefer-view').classList.toggle('hidden', isDaf);
+  if (!isDaf) loadSefer(WORKS[view].start(state.masechet.en), view);
+}
+
+async function loadSefer(ref, view) {
+  $('loading').classList.remove('hidden');
+  $('sefer-right').innerHTML = ''; $('sefer-left').innerHTML = '';
+  const [txt, links] = await Promise.all([Api.fetchText(ref), Api.fetchLinks(ref, true)]);
+  $('loading').classList.add('hidden');
+
+  if (!txt.ok || !flat(txt.data.he).length) {
+    $('sefer-title').textContent = WORKS[view].he + ' · ' + state.masechet.he;
+    $('sefer-main').innerHTML = '<div style="color:var(--ink-soft);text-align:center;padding:30px">אין טקסט זמין לחיבור זה במסכת זו.</div>';
+    $('sefer-foot').textContent = '';
+    state.seferNav = { prev: null, next: null };
+    return;
+  }
+
+  state.seferNav = { prev: txt.data.prev, next: txt.data.next };
+  state.seferSegs = flat(txt.data.he);
+  $('sefer-title').textContent = `${WORKS[view].he} · ${state.masechet.he}`;
+  $('sefer-foot').textContent = txt.data.heRef || '';
+
+  const main = $('sefer-main');
+  main.innerHTML = '';
+  state.seferSegs.forEach((seg, i) => {
+    const span = document.createElement('div');
+    span.className = 'seg';
+    span.id = 'sseg-' + (i + 1);
+    span.innerHTML = boldDH(seg);
+    main.appendChild(span);
+  });
+  main.scrollTop = 0;
+
+  const nosei = new Map();
+  (links.ok ? links.data : []).forEach((ln) => {
+    if (!ln || ln.category !== 'Commentary') return;
+    const name = nameOf(ln);
+    if (!name) return;
+    (nosei.get(name) || nosei.set(name, []).get(name)).push(ln);
+  });
+  const names = [...nosei.keys()];
+  names.forEach((name, i) => {
+    (i % 2 === 0 ? $('sefer-right') : $('sefer-left'))
+      .appendChild(makeMefBox(name, nosei.get(name), { open: true, segs: state.seferSegs, onJump: flashSeferSeg }));
+  });
+  $('page-scroll').scrollTop = 0;
+}
+
+function flashSeferSeg(n) {
+  if (!n) return;
+  const el = $('sseg-' + n);
+  if (!el) return;
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  el.classList.add('flash');
+  setTimeout(() => el.classList.remove('flash'), 1800);
+}
+
+function stepSefer(dir) {
+  const ref = dir < 0 ? state.seferNav.prev : state.seferNav.next;
+  if (!ref) { toast('סוף החיבור'); return; }
+  loadSefer(ref, state.view);
 }
 
 /* ── navigation ──────────────────────────────── */
@@ -385,13 +469,18 @@ function init() {
   buildMasechetSelect();
   buildDafSelect();
 
+  const step = (dir) => (state.view === 'daf' ? stepDaf : stepSefer)(dir);
+
   $('masechet').addEventListener('change', (e) => {
     state.masechet = MASECHTOT[parseInt(e.target.value, 10)];
-    state.daf = '2a'; buildDafSelect(); loadDaf();
+    state.daf = '2a'; buildDafSelect(); switchView(state.view);
   });
-  $('daf').addEventListener('change', (e) => { state.daf = e.target.value; loadDaf(); });
-  $('prev').addEventListener('click', () => stepDaf(-1));
-  $('next').addEventListener('click', () => stepDaf(1));
+  $('daf').addEventListener('change', (e) => { state.daf = e.target.value; if (state.view === 'daf') loadDaf(); });
+  $('view').addEventListener('change', (e) => switchView(e.target.value));
+  $('sefer-prev').addEventListener('click', () => stepSefer(-1));
+  $('sefer-next').addEventListener('click', () => stepSefer(1));
+  $('prev').addEventListener('click', () => step(-1));
+  $('next').addEventListener('click', () => step(1));
   $('mefaresh').addEventListener('change', (e) => { if (e.target.value) { jumpTo(e.target.value); e.target.value = ''; } });
 
   $('fontBtn').addEventListener('click', toggleFont);
@@ -409,8 +498,8 @@ function init() {
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeRead();
     if (e.target.tagName === 'INPUT') return;
-    if (e.key === 'ArrowRight') stepDaf(-1);
-    if (e.key === 'ArrowLeft') stepDaf(1);
+    if (e.key === 'ArrowRight') step(-1);
+    if (e.key === 'ArrowLeft') step(1);
   });
 
   loadDaf();

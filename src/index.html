@@ -20,6 +20,16 @@
       <select id="daf"></select>
     </div>
 
+    <div class="control">
+      <label for="view">מבט</label>
+      <select id="view">
+        <option value="daf">צורת הדף</option>
+        <option value="rif">רי״ף + נושאי כלים</option>
+        <option value="rosh">פסקי הרא״ש</option>
+        <option value="maharsha">מהרש״א</option>
+      </select>
+    </div>
+
     <div class="nav-buttons">
       <button id="prev" title="הדף הקודם">▶ הקודם</button>
       <button id="next" title="הדף הבא">הבא ◀</button>
@@ -48,9 +58,9 @@
       <div id="daf-stage">
         <aside id="otzar-right" class="otzar-margin"></aside>
 
-        <div id="daf-frame">
-          <div id="daf-inner">
-            <div id="daf-banner">
+        <div id="daf-frame" class="daf-frame">
+          <div id="daf-inner" class="daf-inner">
+            <div id="daf-banner" class="daf-banner">
               <span class="corner" id="corner-r"></span>
               <span class="banner-mid" id="banner-mid"></span>
               <span class="corner" id="corner-l"></span>
@@ -72,7 +82,7 @@
               </aside>
             </div>
 
-            <div id="daf-footer">
+            <div id="daf-footer" class="daf-footer">
               <span id="footer-masechet"></span>
               <span id="footer-daf"></span>
             </div>
@@ -80,6 +90,26 @@
         </div>
 
         <aside id="otzar-left" class="otzar-margin"></aside>
+      </div>
+
+      <div id="sefer-view" class="hidden">
+        <div id="sefer-stage">
+          <aside id="sefer-right" class="otzar-margin"></aside>
+
+          <div class="daf-frame">
+            <div class="daf-inner">
+              <div class="daf-banner">
+                <button class="corner navc" id="sefer-prev" title="הקודם">▶</button>
+                <span class="banner-mid" id="sefer-title"></span>
+                <button class="corner navc" id="sefer-next" title="הבא">◀</button>
+              </div>
+              <div id="sefer-main" class="col-body"></div>
+              <div class="daf-footer"><span id="sefer-foot"></span></div>
+            </div>
+          </div>
+
+          <aside id="sefer-left" class="otzar-margin"></aside>
+        </div>
       </div>
 
       <section id="mefarshim-wrap" class="sections">
