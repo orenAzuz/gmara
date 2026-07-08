@@ -199,6 +199,30 @@ select, #topbar button, #room-input {
   border-top: 1.5px solid var(--frame);
 }
 
+/* ── Otzar: daf centered, mefarshim wrapping the outer margins ── */
+#daf-stage {
+  display: grid;
+  grid-template-columns: minmax(190px, 1fr) minmax(0, 1140px) minmax(190px, 1fr);
+  align-items: start;
+  gap: 16px;
+  max-width: 1580px;
+  margin: 0 auto;
+}
+#daf-stage #daf-frame { max-width: none; margin: 0; }
+.otzar-margin { display: flex; flex-direction: column; gap: 12px; }
+.otzar-margin:empty { display: none; }
+
+.otzar-margin details.mef { box-shadow: 0 2px 8px var(--shadow); }
+.otzar-margin details.mef > summary { font-size: 16px; padding: 6px 10px; }
+.otzar-margin .mef-body { max-height: 300px; padding: 8px 12px; }
+.otzar-margin .mef-comment .body { font-size: 15px; line-height: 1.6; }
+
+@media (max-width: 1180px) {
+  #daf-stage { grid-template-columns: 1fr; }
+  .otzar-margin { flex-direction: row; flex-wrap: wrap; }
+  .otzar-margin details.mef { flex: 1 1 320px; }
+}
+
 /* ── Mefarshim / Poskim sections on the page ─── */
 .sections { max-width: 1180px; margin: 20px auto 0; }
 .sections-title {

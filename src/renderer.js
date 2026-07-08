@@ -176,12 +176,57 @@ function buildSections(links) {
     }
   }
 
-  renderSectionGroup($('mefarshim-sections'), mef, sortByHe([...mef.keys()]));
+  const mefNames = sortMefarshim([...mef.keys()]);
+  const right = $('otzar-right'), left = $('otzar-left');
+  right.innerHTML = ''; left.innerHTML = '';
+  mefNames.forEach((name, i) => {
+    (i % 2 === 0 ? right : left).appendChild(makeMefBox(name, mef.get(name), true));
+  });
+  $('mefarshim-wrap').style.display = 'none';
+
   renderSectionGroup($('poskim-sections'), pos, sortPoskim([...pos.keys()]));
-  $('mefarshim-wrap').style.display = mef.size ? '' : 'none';
   $('poskim-wrap').style.display = pos.size ? '' : 'none';
 
-  buildDropdown(sortByHe([...mef.keys()]), sortPoskim([...pos.keys()]));
+  buildDropdown(mefNames, sortPoskim([...pos.keys()]));
+}
+
+const MEF_ORDER = ['רי"ף', 'רא"ש', 'מרדכי', 'ר"ן', 'רשב"א', 'ריטב"א', 'רמב"ן', 'רא"ה', 'מאירי', 'שיטה מקובצת', 'מהרש"א', 'מהר"ם', 'מהרש"ל', 'פני יהושע', 'צל"ח', 'רש"ש', 'חידושי רבי עקיבא איגר'];
+function sortMefarshim(arr) {
+  return arr.sort((a, b) => {
+    const ia = MEF_ORDER.findIndex((p) => a.includes(p));
+    const ib = MEF_ORDER.findIndex((p) => b.includes(p));
+    return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || a.localeCompare(b, 'he');
+  });
+}
+
+function makeMefBox(name, rawList, open) {
+  const list = rawList.slice().sort((a, b) => (segNumOf(a.anchorRef) || 0) - (segNumOf(b.anchorRef) || 0));
+  const det = document.createElement('details');
+  det.className = 'mef';
+  if (open) det.open = true;
+  state.jumpTargets.set(name, det);
+
+  const sum = document.createElement('summary');
+  sum.innerHTML = `<span>${name}</span><span class="count">${list.length}</span>`;
+  det.appendChild(sum);
+
+  const body = document.createElement('div');
+  body.className = 'mef-body';
+  list.forEach((ln, i) => {
+    const segN = segNumOf(ln.anchorRef);
+    const gemHtml = segN && state.gemaraSegs[segN - 1] ? state.gemaraSegs[segN - 1] : '';
+    const dh = snippet(gemHtml) || ('סימן ' + (segN || '?'));
+    const c = document.createElement('div');
+    c.className = 'mef-comment';
+    const parts = flat(ln.he).length ? flat(ln.he) : ['(אין טקסט)'];
+    c.innerHTML =
+      `<span class="dh"><span class="n">${i + 1}.</span>${dh} …</span>` +
+      `<div class="body">${parts.join(' ')}</div>`;
+    c.querySelector('.dh').onclick = () => flashSegment(segN);
+    body.appendChild(c);
+  });
+  det.appendChild(body);
+  return det;
 }
 
 function sortByHe(arr) { return arr.sort((a, b) => a.localeCompare(b, 'he')); }
@@ -195,35 +240,7 @@ function sortPoskim(arr) {
 
 function renderSectionGroup(container, map, names) {
   container.innerHTML = '';
-  names.forEach((name, gi) => {
-    const list = map.get(name).slice().sort((a, b) => (segNumOf(a.anchorRef) || 0) - (segNumOf(b.anchorRef) || 0));
-    const det = document.createElement('details');
-    det.className = 'mef';
-    det.id = 'sect-' + container.id + '-' + gi;
-    state.jumpTargets.set(name, det);
-
-    const sum = document.createElement('summary');
-    sum.innerHTML = `<span>${name}</span><span class="count">${list.length}</span>`;
-    det.appendChild(sum);
-
-    const body = document.createElement('div');
-    body.className = 'mef-body';
-    list.forEach((ln, i) => {
-      const segN = segNumOf(ln.anchorRef);
-      const gemHtml = segN && state.gemaraSegs[segN - 1] ? state.gemaraSegs[segN - 1] : '';
-      const dh = snippet(gemHtml) || ('סימן ' + (segN || '?'));
-      const c = document.createElement('div');
-      c.className = 'mef-comment';
-      const parts = flat(ln.he).length ? flat(ln.he) : ['(אין טקסט)'];
-      c.innerHTML =
-        `<span class="dh"><span class="n">${i + 1}.</span>${dh} …</span>` +
-        `<div class="body">${parts.join(' ')}</div>`;
-      c.querySelector('.dh').onclick = () => flashSegment(segN);
-      body.appendChild(c);
-    });
-    det.appendChild(body);
-    container.appendChild(det);
-  });
+  names.forEach((name) => container.appendChild(makeMefBox(name, map.get(name), false)));
 }
 
 function buildDropdown(mefNames, posNames) {

@@ -1,0 +1,43 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuthed() { return request.auth != null; }
+    function isOwner(uid) { return isAuthed() && request.auth.uid == uid; }
+
+    match /users/{uid} {
+      allow read: if isAuthed();
+      allow write: if isOwner(uid);
+    }
+
+    match /presence/{uid} {
+      allow read: if isAuthed();
+      allow create, update: if isOwner(uid);
+      allow delete: if isOwner(uid);
+    }
+
+    match /calls/{callId} {
+      function isCaller() { return isAuthed() && resource.data.from == request.auth.uid; }
+      function isCallee() { return isAuthed() && resource.data.to == request.auth.uid; }
+      function isNewCaller() { return isAuthed() && request.resource.data.from == request.auth.uid; }
+
+      allow create: if isNewCaller();
+      allow read: if isCaller() || isCallee();
+      allow update: if isCaller() || isCallee();
+      allow delete: if isCaller();
+
+      match /callerCandidates/{candId} {
+        allow read, write: if isAuthed()
+          && (get(/databases/$(database)/documents/calls/$(callId)).data.from == request.auth.uid
+            || get(/databases/$(database)/documents/calls/$(callId)).data.to == request.auth.uid);
+      }
+
+      match /calleeCandidates/{candId} {
+        allow read, write: if isAuthed()
+          && (get(/databases/$(database)/documents/calls/$(callId)).data.from == request.auth.uid
+            || get(/databases/$(database)/documents/calls/$(callId)).data.to == request.auth.uid);
+      }
+    }
+  }
+}
