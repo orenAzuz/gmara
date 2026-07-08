@@ -298,6 +298,38 @@ body.square-comment .mef-comment .body { font-family: var(--serif); }
 #jitsi-container { position: absolute; inset: 0; }
 #jitsi-container iframe { width: 100%; height: 100%; border: 0; }
 
+/* bold dibur hamatchil */
+.dh-bold { font-weight: 800; color: var(--ink); }
+
+/* enlarge button on each mefaresh */
+.sum-tools { display: flex; align-items: center; gap: 8px; }
+.enlarge {
+  background: transparent; border: 1px solid var(--rule); color: var(--title);
+  border-radius: 5px; font-size: 13px; padding: 0 6px; cursor: pointer; line-height: 1.5;
+}
+.enlarge:hover { background: color-mix(in srgb, var(--gold) 30%, transparent); }
+
+/* reading modal */
+.read-inner { width: 74%; height: 86%; }
+.read-tools { display: flex; gap: 8px; align-items: center; }
+.read-tools button {
+  background: var(--gold); color: #22150a; border: none; border-radius: 6px;
+  padding: 3px 11px; font-size: 16px; cursor: pointer; font-family: var(--serif); font-weight: 700;
+}
+.read-body {
+  padding: 24px 36px; overflow-y: auto; background: var(--col-center-bg); color: var(--ink);
+  font-family: var(--rashi); line-height: 1.9; text-align: justify;
+}
+body.square-comment .read-body { font-family: var(--serif); }
+.read-comment { margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid var(--rule); }
+.read-comment:last-child { border-bottom: none; }
+.read-dh {
+  font-family: var(--serif); font-size: 0.68em; color: var(--title);
+  cursor: pointer; margin-bottom: 6px; font-weight: 700;
+}
+.read-dh:hover { text-decoration: underline; }
+.read-dh .n { color: var(--gold); margin-inline-end: 5px; }
+
 /* ── Toast ───────────────────────────────────── */
 .toast {
   position: absolute; bottom: 24px; inset-inline-start: 50%; transform: translateX(50%);

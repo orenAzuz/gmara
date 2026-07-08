@@ -12,6 +12,21 @@ const state = {
 const THEMES = ['blue', 'red', 'classic'];
 const POSEK_ORDER = ['רי"ף', 'רא"ש', 'משנה תורה', 'רמב"ם', 'טור', 'שולחן ערוך', 'ספר מצוות גדול', 'ספר החינוך'];
 
+const SIDE_DEFAULT = { inner: { title: 'רש"י', prefix: 'Rashi on' }, outer: { title: 'תוספות', prefix: 'Tosafot on' } };
+const SIDE = {
+  Nedarim: { inner: { title: 'רש"י', prefix: 'Rashi on' }, outer: { title: 'ר"ן', prefix: 'Ran on' } }
+};
+
+function boldDH(html) {
+  if (typeof html !== 'string') html = String(html || '');
+  if (/^\s*<b/i.test(html)) return html;
+  const m = html.match(/^(\s*[^<][^.–\-־׃]{1,88}?)([.׃]|\s[–\-־])/);
+  if (!m) return html;
+  return '<b class="dh-bold">' + m[1] + '</b>' + html.slice(m[1].length);
+}
+
+let readFS = 22;
+
 function toast(msg, ms = 2600) {
   const t = $('toast');
   t.textContent = msg;
@@ -89,11 +104,16 @@ async function loadDaf() {
   $('footer-daf').textContent = lbl.full;
   $('daf-grid').classList.toggle('amud-b', lbl.amud === 'ב');
 
+  const side = SIDE[en] || SIDE_DEFAULT;
+  state.side = side;
+  $('rashi-title').textContent = side.inner.title;
+  $('tosafot-title').textContent = side.outer.title;
+
   const gemaraRef = `${en} ${daf}`;
-  const [gem, rashi, tos, links] = await Promise.all([
+  const [gem, inner, outer, links] = await Promise.all([
     Api.fetchText(gemaraRef),
-    Api.fetchText(`Rashi on ${en} ${daf}`),
-    Api.fetchText(`Tosafot on ${en} ${daf}`),
+    Api.fetchText(`${side.inner.prefix} ${en} ${daf}`),
+    Api.fetchText(`${side.outer.prefix} ${en} ${daf}`),
     Api.fetchLinks(gemaraRef, true)
   ]);
 
@@ -105,12 +125,12 @@ async function loadDaf() {
   }
 
   console.log('DAF', gemaraRef, 'gem.ok=', gem.ok, 'segs=', (gem.data && gem.data.he || []).length,
-    'rashi=', rashi.ok && flat(rashi.data.he).length, 'tos=', tos.ok && flat(tos.data.he).length,
+    'inner=', inner.ok && flat(inner.data.he).length, 'outer=', outer.ok && flat(outer.data.he).length,
     'links=', links.ok && links.data.length);
 
   renderGemara(gem.data);
-  renderColumn($('rashi-body'), rashi.ok ? rashi.data.he : []);
-  renderColumn($('tosafot-body'), tos.ok ? tos.data.he : []);
+  renderColumn($('rashi-body'), inner.ok ? inner.data.he : []);
+  renderColumn($('tosafot-body'), outer.ok ? outer.data.he : []);
   buildSections(links.ok ? links.data : []);
 
   $('page-scroll').scrollTop = 0;
@@ -153,7 +173,7 @@ function renderColumn(el, arr) {
   items.forEach((c) => {
     const d = document.createElement('div');
     d.className = 'comment';
-    d.innerHTML = c;
+    d.innerHTML = boldDH(c);
     el.appendChild(d);
   });
 }
@@ -168,7 +188,8 @@ function buildSections(links) {
     const name = nameOf(ln);
     if (!name) continue;
     if (ln.category === 'Commentary') {
-      if (/Rashi|Tosafot|^רש|^תוספות$/i.test(name)) continue;
+      if (name === state.side.inner.title || name === state.side.outer.title) continue;
+      if (/Rashi|Tosafot|^רש"?י$|^תוספות$/i.test(name)) continue;
       (mef.get(name) || mef.set(name, []).get(name)).push(ln);
     } else if (ln.category === 'Halakhah') {
       const base = name.split(',')[0].trim();
@@ -207,8 +228,9 @@ function makeMefBox(name, rawList, open) {
   state.jumpTargets.set(name, det);
 
   const sum = document.createElement('summary');
-  sum.innerHTML = `<span>${name}</span><span class="count">${list.length}</span>`;
+  sum.innerHTML = `<span>${name}</span><span class="sum-tools"><button class="enlarge" title="הגדל וקרא">⤢</button><span class="count">${list.length}</span></span>`;
   det.appendChild(sum);
+  sum.querySelector('.enlarge').onclick = (e) => { e.preventDefault(); e.stopPropagation(); openRead(name, list); };
 
   const body = document.createElement('div');
   body.className = 'mef-body';
@@ -221,13 +243,33 @@ function makeMefBox(name, rawList, open) {
     const parts = flat(ln.he).length ? flat(ln.he) : ['(אין טקסט)'];
     c.innerHTML =
       `<span class="dh"><span class="n">${i + 1}.</span>${dh} …</span>` +
-      `<div class="body">${parts.join(' ')}</div>`;
+      `<div class="body">${boldDH(parts.join(' '))}</div>`;
     c.querySelector('.dh').onclick = () => flashSegment(segN);
     body.appendChild(c);
   });
   det.appendChild(body);
   return det;
 }
+
+function openRead(name, rawList) {
+  const list = rawList.slice().sort((a, b) => (segNumOf(a.anchorRef) || 0) - (segNumOf(b.anchorRef) || 0));
+  $('read-title').textContent = name;
+  $('read-body').innerHTML = list.map((ln, i) => {
+    const segN = segNumOf(ln.anchorRef);
+    const gemHtml = segN && state.gemaraSegs[segN - 1] ? state.gemaraSegs[segN - 1] : '';
+    const dh = snippet(gemHtml, 8) || ('סימן ' + (segN || '?'));
+    const parts = flat(ln.he).length ? flat(ln.he) : ['(אין טקסט)'];
+    return `<div class="read-comment"><div class="read-dh" data-seg="${segN || ''}"><span class="n">${i + 1}.</span>${dh} …</div>` +
+      `<div class="read-text">${boldDH(parts.join(' '))}</div></div>`;
+  }).join('');
+  $('read-body').querySelectorAll('.read-dh').forEach((el) => {
+    el.onclick = () => { const s = parseInt(el.dataset.seg, 10); if (s) { closeRead(); flashSegment(s); } };
+  });
+  setReadFS(readFS);
+  $('read-modal').classList.remove('hidden');
+}
+function closeRead() { $('read-modal').classList.add('hidden'); }
+function setReadFS(px) { readFS = Math.max(14, Math.min(52, px)); $('read-body').style.fontSize = readFS + 'px'; }
 
 function sortByHe(arr) { return arr.sort((a, b) => a.localeCompare(b, 'he')); }
 function sortPoskim(arr) {
@@ -359,7 +401,13 @@ function init() {
   $('join-btn').addEventListener('click', joinCall);
   $('fsBtn').addEventListener('click', () => toast('מסך מלא: F11'));
 
+  $('read-close').addEventListener('click', closeRead);
+  $('read-bigger').addEventListener('click', () => setReadFS(readFS + 2));
+  $('read-smaller').addEventListener('click', () => setReadFS(readFS - 2));
+  $('read-modal').addEventListener('click', (e) => { if (e.target.id === 'read-modal') closeRead(); });
+
   document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeRead();
     if (e.target.tagName === 'INPUT') return;
     if (e.key === 'ArrowRight') stepDaf(-1);
     if (e.key === 'ArrowLeft') stepDaf(1);

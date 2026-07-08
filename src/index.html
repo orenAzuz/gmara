@@ -58,7 +58,7 @@
 
             <div id="daf-grid">
               <aside class="col side" id="col-tosafot">
-                <h2 class="col-title">תוספות</h2>
+                <h2 class="col-title" id="tosafot-title">תוספות</h2>
                 <div class="col-body ktav-rashi" id="tosafot-body"></div>
               </aside>
 
@@ -67,7 +67,7 @@
               </article>
 
               <aside class="col side" id="col-rashi">
-                <h2 class="col-title">רש״י</h2>
+                <h2 class="col-title" id="rashi-title">רש״י</h2>
                 <div class="col-body ktav-rashi" id="rashi-body"></div>
               </aside>
             </div>
@@ -93,6 +93,20 @@
       </section>
     </div>
   </main>
+
+  <div id="read-modal" class="modal hidden">
+    <div class="modal-inner read-inner">
+      <div class="modal-head">
+        <span id="read-title"></span>
+        <span class="read-tools">
+          <button id="read-smaller" title="הקטן">א−</button>
+          <button id="read-bigger" title="הגדל">א+</button>
+          <button id="read-close" title="סגור">✕</button>
+        </span>
+      </div>
+      <div class="modal-body read-body" id="read-body"></div>
+    </div>
+  </div>
 
   <div id="call-modal" class="modal hidden">
     <div class="modal-inner">
