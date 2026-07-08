@@ -831,11 +831,6 @@ async function speak(rawText) {
 }
 
 function toggleRead() { if (tts.on) stopSpeak(); else speak(currentReadText()); }
-function toggleVoice() {
-  tts.voice = tts.voice === 'male' ? 'female' : 'male';
-  $('voiceBtn').textContent = tts.voice === 'male' ? '♂' : '♀';
-  toast('קול: ' + (tts.voice === 'male' ? 'גבר (אברי)' : 'אישה (הילה)'));
-}
 
 let dafScale = 1;
 function setDafScale(v) {
@@ -884,7 +879,6 @@ function init() {
   $('zoomOut').addEventListener('click', () => setDafScale(dafScale - 0.15));
   $('focusBtn').addEventListener('click', openReadDaf);
   $('readBtn').addEventListener('click', toggleRead);
-  $('voiceBtn').addEventListener('click', toggleVoice);
   $('call-close').addEventListener('click', closeCall);
   $('join-btn').addEventListener('click', joinCall);
   $('fsBtn').addEventListener('click', () => toast('מסך מלא: F11'));

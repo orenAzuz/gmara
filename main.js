@@ -11,7 +11,7 @@ function speakToDataUri(text, voice) {
     const clean = String(text || '').replace(/\s+/g, ' ').trim().slice(0, 6000);
     if (!clean) return resolve({ ok: false, error: 'empty' });
     const out = path.join(os.tmpdir(), 'gmara-tts-' + Date.now() + '.mp3');
-    const v = voice === 'female' ? 'he-IL-HilaNeural' : 'he-IL-AvriNeural';
+    const v = 'he-IL-AvriNeural';
     const tryBin = (i) => {
       if (i >= EDGE_TTS.length) return resolve({ ok: false, error: 'edge-tts-missing' });
       execFile(EDGE_TTS[i], ['--voice', v, '--rate', '-12%', '--text', clean, '--write-media', out], { timeout: 60000 }, (err) => {
