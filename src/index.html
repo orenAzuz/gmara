@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>גמרא</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header id="topbar">
+    <div class="brand">גמרא</div>
+
+    <div class="control">
+      <label for="masechet">מסכת</label>
+      <select id="masechet"></select>
+    </div>
+
+    <div class="control">
+      <label for="daf">דף</label>
+      <select id="daf"></select>
+    </div>
+
+    <div class="nav-buttons">
+      <button id="prev" title="הדף הקודם">▶ הקודם</button>
+      <button id="next" title="הדף הבא">הבא ◀</button>
+    </div>
+
+    <div class="control grow">
+      <label for="mefaresh">מפרשים על הדף</label>
+      <select id="mefaresh"><option value="">— טוען —</option></select>
+    </div>
+
+    <div class="actions">
+      <button id="callBtn" title="שיחת חברותא">📹 חברותא</button>
+      <button id="fsBtn" title="מסך מלא (F11)">⛶ מסך מלא</button>
+    </div>
+  </header>
+
+  <main id="daf-wrap">
+    <section id="loading" class="overlay">
+      <div class="spinner"></div>
+      <div class="loading-text">טוען את הדף…</div>
+    </section>
+
+    <div id="daf-grid">
+      <aside class="col side" id="col-tosafot">
+        <h2 class="col-title">תוספות</h2>
+        <div class="col-body" id="tosafot-body"></div>
+      </aside>
+
+      <article class="col center" id="col-gemara">
+        <div class="daf-header">
+          <span id="daf-title"></span>
+          <span id="daf-mesorah"></span>
+        </div>
+        <div class="col-body" id="gemara-body"></div>
+      </article>
+
+      <aside class="col side" id="col-rashi">
+        <h2 class="col-title">רש״י</h2>
+        <div class="col-body" id="rashi-body"></div>
+      </aside>
+    </div>
+  </main>
+
+  <!-- מפרש נבחר -->
+  <div id="mefaresh-panel" class="panel hidden">
+    <div class="panel-head">
+      <span id="mefaresh-name"></span>
+      <button id="mefaresh-close" title="סגור">✕</button>
+    </div>
+    <div id="mefaresh-list" class="panel-list"></div>
+    <div id="mefaresh-text" class="panel-text"></div>
+  </div>
+
+  <!-- שיחת חברותא -->
+  <div id="call-modal" class="modal hidden">
+    <div class="modal-inner">
+      <div class="modal-head">
+        <span>שיחת חברותא — וידאו</span>
+        <button id="call-close" title="סגור">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="call-setup">
+          <p>שם החדר (שני הצדדים צריכים אותו שם):</p>
+          <input id="room-input" type="text" dir="ltr" />
+          <button id="join-btn">הצטרף לשיחה</button>
+          <p class="hint">ברירת מחדל: חדר לפי הדף הנוכחי, כך שהחברותא נפגש "על הדף".</p>
+        </div>
+        <div id="jitsi-container"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="data.js"></script>
+  <script src="renderer.js"></script>
+</body>
+</html>

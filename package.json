@@ -1,0 +1,15 @@
+{
+  "name": "gmara",
+  "version": "0.1.0",
+  "description": "גמרא — לומדים את הדף בצורתו המקורית, עם קפיצה לכל מפרש ושיחת חברותא בוידאו",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev"
+  },
+  "author": "orez <orezaz@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^32.2.0"
+  }
+}
