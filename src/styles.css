@@ -141,7 +141,7 @@ body.focus-daf #focusBtn { background: var(--title); color: #fff; }
 /* ── Scroll area ─────────────────────────────── */
 #daf-wrap { position: relative; height: calc(100% - 58px); }
 #page-scroll {
-  height: 100%; overflow-y: auto; padding: 26px 22px 60px;
+  height: 100%; overflow-y: auto; padding: 20px 10px 60px;
   background:
     radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--desk) 70%, #fff) 0%, var(--desk) 60%),
     var(--desk);
@@ -179,21 +179,22 @@ body.focus-daf #focusBtn { background: var(--title); color: #fff; }
 }
 .tz::after { content: ''; display: block; clear: both; }
 .tz-gemara {
-  position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
-  width: 44%; z-index: 3; box-sizing: border-box;
+  position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+  width: 47%; z-index: 3; box-sizing: border-box;
   background: var(--col-center-bg);
-  border-inline: 1.5px solid var(--frame);
-  padding: 10px 14px;
+  border: 1.5px solid var(--frame); border-radius: 2px;
+  padding: 12px 18px;
+  box-shadow: 0 0 0 3px var(--col-bg);
 }
 #gemara-body {
-  font-size: calc(22px * var(--daf-scale)); color: var(--ink);
-  font-weight: 500; line-height: 1.72; text-align: justify;
+  font-size: calc(24px * var(--daf-scale)); color: var(--ink);
+  font-weight: 500; line-height: 1.75; text-align: justify;
 }
-.tz-side { width: 50%; box-sizing: border-box; padding: 2px 8px; color: var(--ink); }
-.tz-side > div { font-size: calc(15.5px * var(--daf-scale)); line-height: 1.55; text-align: justify; }
+.tz-side { width: 50%; box-sizing: border-box; padding: 4px 10px; color: var(--ink); }
+.tz-side > div { font-size: calc(16.5px * var(--daf-scale)); line-height: 1.6; text-align: justify; }
 .tz-rashi { float: left; }
 .tz-tosafot { float: right; }
-.tz-notch { width: 45%; height: var(--gm-h); }
+.tz-notch { width: 54%; height: calc(var(--gm-h) + 10px); }
 .tz-rashi .tz-notch { float: right; }
 .tz-tosafot .tz-notch { float: left; }
 .tz.amud-b .tz-rashi { float: right; }
@@ -236,10 +237,10 @@ body.focus-daf #focusBtn { background: var(--title); color: #fff; }
 /* ── Otzar: daf centered, mefarshim wrapping the outer margins ── */
 #daf-stage, #sefer-stage {
   display: grid;
-  grid-template-columns: minmax(190px, 1fr) minmax(0, 1140px) minmax(190px, 1fr);
+  grid-template-columns: minmax(120px, 0.42fr) minmax(0, 1640px) minmax(120px, 0.42fr);
   align-items: start;
-  gap: 16px;
-  max-width: 1580px;
+  gap: 12px;
+  max-width: 2040px;
   margin: 0 auto;
 }
 #daf-stage .daf-frame, #sefer-stage .daf-frame { max-width: none; margin: 0; }
