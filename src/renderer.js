@@ -145,6 +145,8 @@ async function loadDaf() {
   $('page-scroll').scrollTop = 0;
   $('gemara-body').scrollTop = 0;
   $('loading').classList.add('hidden');
+  requestAnimationFrame(layoutTz);
+  setTimeout(layoutTz, 120);
   if (haveFB() && Auth.uid) { try { Presence.setDaf(state.masechet.he, state.daf); } catch (e) {} }
 }
 
@@ -174,6 +176,16 @@ function renderGemara(data) {
     body.appendChild(span);
   });
   if (!state.gemaraSegs.length) body.innerHTML = '<div style="color:var(--ink-soft)">אין טקסט לדף זה.</div>';
+}
+
+function layoutTz() {
+  const g = $('col-gemara'), grid = $('daf-grid');
+  if (!g || !grid || !grid.classList.contains('tz')) return;
+  const h = g.offsetHeight;
+  if (h > 0) {
+    grid.style.setProperty('--gm-h', h + 'px');
+    grid.style.minHeight = (h + 24) + 'px';
+  }
 }
 
 function renderColumn(el, arr) {
@@ -664,6 +676,28 @@ function cycleTheme() {
 /* ── read-aloud (Hebrew TTS via edge-tts, browser fallback) ── */
 const tts = { audio: null, on: false, voice: 'male' };
 
+const RASHEI_TEVOT = [
+  ['וכו׳', 'וְכוּלֵי'], ["וכו'", 'וְכוּלֵי'], ['כו׳', 'וְכוּלֵי'], ["כו'", 'וְכוּלֵי'], ['וכ׳', 'וְכוּלֵי'],
+  ['וגו׳', 'וְגוֹמֵר'], ["וגו'", 'וְגוֹמֵר'],
+  ['א״ר', 'אָמַר רַבִּי'], ['א"ר', 'אָמַר רַבִּי'], ['דא״ר', 'דְּאָמַר רַבִּי'], ['דא"ר', 'דְּאָמַר רַבִּי'],
+  ['ת״ר', 'תָּנוּ רַבָּנָן'], ['ת"ר', 'תָּנוּ רַבָּנָן'],
+  ['א״ל', 'אָמַר לֵיהּ'], ['א"ל', 'אָמַר לֵיהּ'],
+  ['ה״ק', 'הָכִי קָאָמַר'], ['ה"ק', 'הָכִי קָאָמַר'],
+  ['מ״ט', 'מַאי טַעְמָא'], ['מ"ט', 'מַאי טַעְמָא'],
+  ['ד״ה', 'דִּבּוּר הַמַּתְחִיל'], ['ד"ה', 'דִּבּוּר הַמַּתְחִיל'],
+  ['ע״ש', 'עַיֵּין שָׁם'], ['ע"ש', 'עַיֵּין שָׁם'], ['ע״כ', 'עַד כָּאן'], ['ע"כ', 'עַד כָּאן'],
+  ['כ״ש', 'כָּל שֶׁכֵּן'], ['כ"ש', 'כָּל שֶׁכֵּן'], ['ה״נ', 'הָכִי נַמִי'], ['ה"נ', 'הָכִי נַמִי'],
+  ['ש״מ', 'שְׁמַע מִינַּהּ'], ['ש"מ', 'שְׁמַע מִינַּהּ'], ['ק״ו', 'קַל וָחוֹמֶר'], ['ק"ו', 'קַל וָחוֹמֶר'],
+  ['ל״ל', 'לְמָה לִי'], ['ל"ל', 'לְמָה לִי'], ['נ״מ', 'נַפְקָא מִינַּהּ'], ['נ"מ', 'נַפְקָא מִינַּהּ'],
+  ['וא״ת', 'וְאִם תֹּאמַר'], ['וא"ת', 'וְאִם תֹּאמַר'], ['וי״ל', 'וְיֵשׁ לוֹמַר'], ['וי"ל', 'וְיֵשׁ לוֹמַר'],
+  ['פ״ק', 'פֶּרֶק קַמָּא'], ['רמב״ם', 'רַמְבַּם'], ['רמב"ם', 'רַמְבַּם']
+];
+function expandAbbrev(t) {
+  let s = ' ' + String(t || '') + ' ';
+  for (const [a, b] of RASHEI_TEVOT) s = s.split(a).join(b);
+  return s.trim();
+}
+
 function currentReadText() {
   const sel = window.getSelection ? String(window.getSelection()) : '';
   if (sel && sel.trim().length > 1) return sel.trim();
@@ -676,6 +710,11 @@ function setSpeaking(on) {
   const b = $('readBtn');
   if (b) { b.textContent = on ? '⏹ עצור' : '🔊 הקרא'; b.classList.toggle('reading', on); }
 }
+function setPreparing() {
+  tts.on = true;
+  const b = $('readBtn');
+  if (b) { b.textContent = '⏳ מכין…'; b.classList.add('reading'); }
+}
 
 function stopSpeak() {
   if (tts.audio) { try { tts.audio.pause(); } catch (e) {} tts.audio = null; }
@@ -683,11 +722,11 @@ function stopSpeak() {
   setSpeaking(false);
 }
 
-async function speak(text) {
-  text = (text || '').trim();
+async function speak(rawText) {
+  const text = expandAbbrev((rawText || '').trim());
   if (!text) { toast('אין טקסט להקראה'); return; }
   stopSpeak();
-  toast('מכין הקראה…', 1400);
+  setPreparing();
   let uri = null;
   if (window.gmara && window.gmara.tts) {
     const r = await window.gmara.tts(text, tts.voice);
@@ -697,14 +736,15 @@ async function speak(text) {
     tts.audio = new Audio(uri);
     tts.audio.onended = () => setSpeaking(false);
     tts.audio.onerror = () => { setSpeaking(false); toast('שגיאת השמעה'); };
-    tts.audio.play().then(() => setSpeaking(true)).catch(() => toast('לא ניתן להשמיע'));
+    tts.audio.play().then(() => setSpeaking(true)).catch(() => { setSpeaking(false); toast('לא ניתן להשמיע'); });
   } else if (window.speechSynthesis) {
     const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'he-IL';
+    u.lang = 'he-IL'; u.rate = 0.9;
     u.onend = () => setSpeaking(false);
     window.speechSynthesis.speak(u);
     setSpeaking(true);
   } else {
+    setSpeaking(false);
     toast('הקראה אינה זמינה כאן');
   }
 }
@@ -720,12 +760,14 @@ let dafScale = 1;
 function setDafScale(v) {
   dafScale = Math.max(0.7, Math.min(2.2, v));
   document.body.style.setProperty('--daf-scale', dafScale.toFixed(2));
+  requestAnimationFrame(layoutTz);
 }
 function toggleFocus() {
   document.body.classList.toggle('focus-daf');
   const on = document.body.classList.contains('focus-daf');
   $('focusBtn').textContent = on ? '↩ יציאה' : '📖 מיקוד';
   if (on && dafScale < 1) setDafScale(1);
+  requestAnimationFrame(layoutTz);
 }
 
 /* ── init ────────────────────────────────────── */
@@ -749,6 +791,7 @@ function init() {
   searchEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); doSearch(searchEl.value); } });
   searchEl.addEventListener('focus', () => { if ($('search-results').innerHTML.trim()) $('search-results').classList.remove('hidden'); });
   document.addEventListener('click', (e) => { if (!e.target.closest('.search-wrap')) hideSearchResults(); });
+  window.addEventListener('resize', () => requestAnimationFrame(layoutTz));
 
   $('fontBtn').addEventListener('click', toggleFont);
   $('themeBtn').addEventListener('click', cycleTheme);

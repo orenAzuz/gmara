@@ -14,7 +14,7 @@ function speakToDataUri(text, voice) {
     const v = voice === 'female' ? 'he-IL-HilaNeural' : 'he-IL-AvriNeural';
     const tryBin = (i) => {
       if (i >= EDGE_TTS.length) return resolve({ ok: false, error: 'edge-tts-missing' });
-      execFile(EDGE_TTS[i], ['--voice', v, '--text', clean, '--write-media', out], { timeout: 60000 }, (err) => {
+      execFile(EDGE_TTS[i], ['--voice', v, '--rate', '-12%', '--text', clean, '--write-media', out], { timeout: 60000 }, (err) => {
         if (err) return tryBin(i + 1);
         try {
           const b64 = fs.readFileSync(out).toString('base64');

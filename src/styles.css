@@ -172,36 +172,38 @@ body.focus-daf #focusBtn { background: var(--title); color: #fff; }
   min-width: 64px; text-align: center;
 }
 
-#daf-grid {
-  display: grid;
-  grid-template-columns: 1fr 1.5fr 1fr;
-  min-height: 60vh;
-  background: var(--col-bg);
+/* tzuras hadaf: gemara centered block, rashi/tosafot wrap its corners */
+#daf-grid.tz {
+  position: relative; background: var(--col-bg);
+  padding: 12px 14px 16px; --gm-h: 300px;
 }
-.col { display: flex; flex-direction: column; overflow: hidden; background: var(--col-bg); }
-.col.center { background: var(--col-center-bg); }
-#col-gemara { border-inline: 1.5px solid var(--frame); }
+.tz::after { content: ''; display: block; clear: both; }
+.tz-gemara {
+  position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+  width: 44%; z-index: 3; box-sizing: border-box;
+  background: var(--col-center-bg);
+  border-inline: 1.5px solid var(--frame);
+  padding: 10px 14px;
+}
+#gemara-body {
+  font-size: calc(22px * var(--daf-scale)); color: var(--ink);
+  font-weight: 500; line-height: 1.72; text-align: justify;
+}
+.tz-side { width: 50%; box-sizing: border-box; padding: 2px 8px; color: var(--ink); }
+.tz-side > div { font-size: calc(15.5px * var(--daf-scale)); line-height: 1.55; text-align: justify; }
+.tz-rashi { float: left; }
+.tz-tosafot { float: right; }
+.tz-notch { width: 45%; height: var(--gm-h); }
+.tz-rashi .tz-notch { float: right; }
+.tz-tosafot .tz-notch { float: left; }
+.tz.amud-b .tz-rashi { float: right; }
+.tz.amud-b .tz-tosafot { float: left; }
+.tz.amud-b .tz-rashi .tz-notch { float: left; }
+.tz.amud-b .tz-tosafot .tz-notch { float: right; }
+.tz-label { font-family: var(--serif); font-size: 11px; color: var(--title); font-weight: 700; margin-inline-end: 4px; }
 
-#col-tosafot { order: 1; }
-#col-gemara { order: 2; }
-#col-rashi { order: 3; }
-#daf-grid.amud-b #col-rashi { order: 1; }
-#daf-grid.amud-b #col-tosafot { order: 3; }
-
-.col-title {
-  margin: 0; padding: 5px 12px; text-align: center;
-  font-size: 17px; color: var(--title); font-weight: 700;
-  background: color-mix(in srgb, var(--frame) 8%, transparent);
-  border-bottom: 1px solid var(--rule);
-}
-.col-body {
-  padding: 14px 16px; overflow-y: auto; flex: 1;
-  line-height: 1.8; text-align: justify;
-  max-height: 66vh;
-  text-shadow: 0 0 1px color-mix(in srgb, var(--ink) 15%, transparent);
-}
-.center .col-body { font-size: calc(23px * var(--daf-scale)); color: var(--ink); font-weight: 500; padding: 18px 22px; line-height: 1.75; }
-.side .col-body { font-size: calc(16px * var(--daf-scale)); color: var(--ink); line-height: 1.62; }
+/* generic body kept for the sefer view */
+.col-body { padding: 14px 16px; overflow-y: auto; line-height: 1.8; text-align: justify; }
 .ktav-rashi { font-family: var(--rashi); }
 
 /* ornamental opening word (perek / masechta start) */
@@ -217,9 +219,10 @@ body.focus-daf #focusBtn { background: var(--title); color: #fff; }
 
 .seg { display: inline; }
 .seg-anchor { cursor: default; border-radius: 3px; }
-.center .seg { margin-inline-end: 3px; }
+#gemara-body .seg { margin-inline-end: 3px; }
 .seg.flash { background: color-mix(in srgb, var(--gold) 60%, transparent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--gold) 60%, transparent); }
-.side .comment { margin-bottom: 8px; }
+#gemara-body > .seg:first-child::first-letter { font-size: 1.12em; font-weight: 800; color: var(--title); }
+.tz-side .comment { margin-bottom: 8px; }
 
 /* folio strip at the bottom of the daf */
 .daf-footer {
@@ -256,9 +259,9 @@ body.focus-daf #daf-stage, body.focus-daf #sefer-stage {
   grid-template-columns: 1fr; max-width: 1500px;
 }
 body.focus-daf #page-scroll { padding: 12px 16px 24px; }
-body.focus-daf .center .col-body { font-size: calc(28px * var(--daf-scale)); }
-body.focus-daf .side .col-body { font-size: calc(19px * var(--daf-scale)); }
-body.focus-daf .col-body { max-height: 82vh; }
+body.focus-daf #gemara-body { font-size: calc(27px * var(--daf-scale)); }
+body.focus-daf .tz-gemara { width: 46%; }
+body.focus-daf .tz-side > div { font-size: calc(18px * var(--daf-scale)); }
 body.focus-daf #sefer-main { max-height: 84vh; }
 #sefer-main .seg { display: block; margin-bottom: 10px; }
 #sefer-main .seg.flash { background: color-mix(in srgb, var(--gold) 60%, transparent); }
