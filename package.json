@@ -5,7 +5,8 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "dev": "electron . --dev"
+    "dev": "electron . --dev",
+    "web": "python3 -m http.server 8080 --bind 127.0.0.1"
   },
   "author": "orez <orezaz@gmail.com>",
   "license": "MIT",

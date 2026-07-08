@@ -1,6 +1,10 @@
 const { app, BrowserWindow, ipcMain, globalShortcut } = require('electron');
 const path = require('path');
 
+app.disableHardwareAcceleration();
+app.commandLine.appendSwitch('disable-gpu');
+app.commandLine.appendSwitch('disable-software-rasterizer');
+
 const SEFARIA = 'https://www.sefaria.org/api';
 
 function toUrlRef(ref) {
@@ -36,8 +40,8 @@ function createWindow() {
   const win = new BrowserWindow({
     width: 1400,
     height: 900,
-    backgroundColor: '#f4ecd8',
-    fullscreen: true,
+    show: false,
+    backgroundColor: '#e9edf4',
     autoHideMenuBar: true,
     icon: path.join(__dirname, 'assets', 'icon.png'),
     webPreferences: {
@@ -47,7 +51,21 @@ function createWindow() {
     }
   });
 
+  win.once('ready-to-show', () => {
+    win.show();
+    win.setFullScreen(true);
+    win.focus();
+    win.moveTop();
+  });
+
   win.loadFile(path.join(__dirname, 'src', 'index.html'));
+
+  win.webContents.on('console-message', (_e, level, message) => {
+    console.log('[renderer]', message);
+  });
+  win.webContents.on('did-fail-load', (_e, code, desc) => {
+    console.log('[did-fail-load]', code, desc);
+  });
 
   globalShortcut.register('F11', () => win.setFullScreen(!win.isFullScreen()));
   globalShortcut.register('CommandOrControl+Q', () => app.quit());

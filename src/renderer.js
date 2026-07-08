@@ -5,9 +5,12 @@ const state = {
   daf: '2a',
   dapim: [],
   gemaraSegs: [],
-  commentators: new Map(),
+  jumpTargets: new Map(),
   jitsi: null
 };
+
+const THEMES = ['blue', 'red', 'classic'];
+const POSEK_ORDER = ['רי"ף', 'רא"ש', 'משנה תורה', 'רמב"ם', 'טור', 'שולחן ערוך', 'ספר מצוות גדול', 'ספר החינוך'];
 
 function toast(msg, ms = 2600) {
   const t = $('toast');
@@ -17,43 +20,49 @@ function toast(msg, ms = 2600) {
   toast._t = setTimeout(() => t.classList.add('hidden'), ms);
 }
 
+function flat(x) {
+  const out = [];
+  const walk = (v) => {
+    if (Array.isArray(v)) v.forEach(walk);
+    else if (v != null && String(v).trim()) out.push(String(v));
+  };
+  walk(x);
+  return out;
+}
 function stripHtml(html) {
   const d = document.createElement('div');
-  d.innerHTML = html || '';
+  d.innerHTML = flat(html).join(' ');
   return (d.textContent || '').replace(/\s+/g, ' ').trim();
 }
-
 function snippet(html, words = 6) {
-  const clean = stripHtml(html).replace(/[־–-]/g, ' ');
+  const clean = stripHtml(html).replace(/[־–]/g, ' ');
   return clean.split(' ').filter(Boolean).slice(0, words).join(' ');
 }
-
 function segNumOf(ref) {
-  const m = String(ref).match(/:(\d+)/);
+  const m = String(ref || '').match(/:(\d+)/);
   return m ? parseInt(m[1], 10) : null;
 }
+function nameOf(ln) {
+  return (ln.collectiveTitle && ln.collectiveTitle.he) || ln.heTitle || ln.index_title || '';
+}
 
-/* ── build selects ─────────────────────────── */
+/* ── selects ─────────────────────────────────── */
 function buildMasechetSelect() {
   const sel = $('masechet');
   sel.innerHTML = '';
   const seders = {};
-  MASECHTOT.forEach((m, i) => {
-    (seders[m.seder] = seders[m.seder] || []).push({ m, i });
-  });
+  MASECHTOT.forEach((m, i) => (seders[m.seder] = seders[m.seder] || []).push({ m, i }));
   for (const seder of Object.keys(seders)) {
     const og = document.createElement('optgroup');
     og.label = 'סדר ' + seder;
     for (const { m, i } of seders[seder]) {
       const o = document.createElement('option');
-      o.value = String(i);
-      o.textContent = m.he;
+      o.value = String(i); o.textContent = m.he;
       og.appendChild(o);
     }
     sel.appendChild(og);
   }
 }
-
 function buildDafSelect() {
   const sel = $('daf');
   sel.innerHTML = '';
@@ -61,44 +70,47 @@ function buildDafSelect() {
   for (const d of state.dapim) {
     const lbl = amudLabel(d);
     const o = document.createElement('option');
-    o.value = d;
-    o.textContent = `${lbl.daf} ${lbl.amud === 'א' ? '.' : ':'}`;
+    o.value = d; o.textContent = `${lbl.daf} ${lbl.amud === 'א' ? '.' : ':'}`;
     sel.appendChild(o);
   }
   sel.value = state.daf;
 }
 
-/* ── load a daf ────────────────────────────── */
+/* ── load a daf ──────────────────────────────── */
 async function loadDaf() {
-  const en = state.masechet.en;
-  const daf = state.daf;
+  const en = state.masechet.en, daf = state.daf;
   $('loading').classList.remove('hidden');
-  closeMefareshPanel();
 
   const lbl = amudLabel(daf);
-  $('daf-title').textContent = `${state.masechet.he} · ${lbl.full}`;
-  $('daf-mesorah').textContent = '';
+  $('banner-mid').textContent = state.masechet.he;
+  $('corner-r').textContent = `${lbl.daf}${lbl.amud === 'א' ? '.' : ':'}`;
+  $('corner-l').textContent = `${lbl.daf}${lbl.amud === 'א' ? '.' : ':'}`;
 
   const gemaraRef = `${en} ${daf}`;
-  const [gem, rashi, tos, linksRes] = await Promise.all([
-    window.gmara.fetchText(gemaraRef),
-    window.gmara.fetchText(`Rashi on ${en} ${daf}`),
-    window.gmara.fetchText(`Tosafot on ${en} ${daf}`),
-    window.gmara.fetchLinks(gemaraRef)
+  const [gem, rashi, tos, links] = await Promise.all([
+    Api.fetchText(gemaraRef),
+    Api.fetchText(`Rashi on ${en} ${daf}`),
+    Api.fetchText(`Tosafot on ${en} ${daf}`),
+    Api.fetchLinks(gemaraRef, true)
   ]);
 
   if (!gem.ok) {
     $('loading').classList.add('hidden');
     toast('לא הצלחתי לטעון את הדף (בדוק חיבור לאינטרנט)');
-    $('gemara-body').innerHTML = `<div style="color:#7a1f1f">שגיאה: ${gem.error}</div>`;
+    $('gemara-body').innerHTML = `<div style="color:var(--title)">שגיאה: ${gem.error}</div>`;
     return;
   }
 
-  renderGemara(gem.data);
-  renderCommentaryColumn($('rashi-body'), rashi.ok ? rashi.data.he : []);
-  renderCommentaryColumn($('tosafot-body'), tos.ok ? tos.data.he : []);
-  buildMefareshDropdown(linksRes.ok ? linksRes.data : []);
+  console.log('DAF', gemaraRef, 'gem.ok=', gem.ok, 'segs=', (gem.data && gem.data.he || []).length,
+    'rashi=', rashi.ok && flat(rashi.data.he).length, 'tos=', tos.ok && flat(tos.data.he).length,
+    'links=', links.ok && links.data.length);
 
+  renderGemara(gem.data);
+  renderColumn($('rashi-body'), rashi.ok ? rashi.data.he : []);
+  renderColumn($('tosafot-body'), tos.ok ? tos.data.he : []);
+  buildSections(links.ok ? links.data : []);
+
+  $('page-scroll').scrollTop = 0;
   $('gemara-body').scrollTop = 0;
   $('loading').classList.add('hidden');
 }
@@ -112,29 +124,15 @@ function renderGemara(data) {
     span.className = 'seg seg-anchor';
     span.id = 'seg-' + (i + 1);
     span.innerHTML = ' ' + seg + ' ';
-    span.title = 'סימן ' + (i + 1);
     body.appendChild(span);
   });
-  if (!state.gemaraSegs.length) body.innerHTML = '<div style="color:#5a4326">אין טקסט לדף זה.</div>';
+  if (!state.gemaraSegs.length) body.innerHTML = '<div style="color:var(--ink-soft)">אין טקסט לדף זה.</div>';
 }
 
-function flat(arr) {
-  const out = [];
-  const walk = (x) => {
-    if (Array.isArray(x)) x.forEach(walk);
-    else if (x != null && String(x).trim()) out.push(String(x));
-  };
-  walk(arr);
-  return out;
-}
-
-function renderCommentaryColumn(el, arr) {
+function renderColumn(el, arr) {
   el.innerHTML = '';
   const items = flat(arr);
-  if (!items.length) {
-    el.innerHTML = '<div style="color:#8a7550;font-size:14px">— אין —</div>';
-    return;
-  }
+  if (!items.length) { el.innerHTML = '<div style="color:var(--ink-soft);font-size:14px">— אין —</div>'; return; }
   items.forEach((c) => {
     const d = document.createElement('div');
     d.className = 'comment';
@@ -143,73 +141,103 @@ function renderCommentaryColumn(el, arr) {
   });
 }
 
-/* ── mefarshim dropdown ────────────────────── */
-function buildMefareshDropdown(links) {
-  const map = new Map();
+/* ── mefarshim + poskim sections ─────────────── */
+function buildSections(links) {
+  state.jumpTargets = new Map();
+  const mef = new Map(), pos = new Map();
+
   for (const ln of links) {
     if (!ln) continue;
-    if (ln.category !== 'Commentary') continue;
-    const name = (ln.collectiveTitle && ln.collectiveTitle.he) || ln.index_title || '';
+    const name = nameOf(ln);
     if (!name) continue;
-    if (/^רש"?י$|^תוספות$|Rashi|Tosafot/i.test(name)) continue;
-    if (!map.has(name)) map.set(name, []);
-    map.get(name).push(ln);
+    if (ln.category === 'Commentary') {
+      if (/Rashi|Tosafot|^רש|^תוספות$/i.test(name)) continue;
+      (mef.get(name) || mef.set(name, []).get(name)).push(ln);
+    } else if (ln.category === 'Halakhah') {
+      const base = name.split(',')[0].trim();
+      (pos.get(base) || pos.set(base, []).get(base)).push(ln);
+    }
   }
-  for (const list of map.values()) {
-    list.sort((a, b) => (segNumOf(a.anchorRef) || 0) - (segNumOf(b.anchorRef) || 0));
-  }
-  state.commentators = map;
 
+  renderSectionGroup($('mefarshim-sections'), mef, sortByHe([...mef.keys()]));
+  renderSectionGroup($('poskim-sections'), pos, sortPoskim([...pos.keys()]));
+  $('mefarshim-wrap').style.display = mef.size ? '' : 'none';
+  $('poskim-wrap').style.display = pos.size ? '' : 'none';
+
+  buildDropdown(sortByHe([...mef.keys()]), sortPoskim([...pos.keys()]));
+}
+
+function sortByHe(arr) { return arr.sort((a, b) => a.localeCompare(b, 'he')); }
+function sortPoskim(arr) {
+  return arr.sort((a, b) => {
+    const ia = POSEK_ORDER.findIndex((p) => a.includes(p));
+    const ib = POSEK_ORDER.findIndex((p) => b.includes(p));
+    return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || a.localeCompare(b, 'he');
+  });
+}
+
+function renderSectionGroup(container, map, names) {
+  container.innerHTML = '';
+  names.forEach((name, gi) => {
+    const list = map.get(name).slice().sort((a, b) => (segNumOf(a.anchorRef) || 0) - (segNumOf(b.anchorRef) || 0));
+    const det = document.createElement('details');
+    det.className = 'mef';
+    det.id = 'sect-' + container.id + '-' + gi;
+    state.jumpTargets.set(name, det);
+
+    const sum = document.createElement('summary');
+    sum.innerHTML = `<span>${name}</span><span class="count">${list.length}</span>`;
+    det.appendChild(sum);
+
+    const body = document.createElement('div');
+    body.className = 'mef-body';
+    list.forEach((ln, i) => {
+      const segN = segNumOf(ln.anchorRef);
+      const gemHtml = segN && state.gemaraSegs[segN - 1] ? state.gemaraSegs[segN - 1] : '';
+      const dh = snippet(gemHtml) || ('סימן ' + (segN || '?'));
+      const c = document.createElement('div');
+      c.className = 'mef-comment';
+      const parts = flat(ln.he).length ? flat(ln.he) : ['(אין טקסט)'];
+      c.innerHTML =
+        `<span class="dh"><span class="n">${i + 1}.</span>${dh} …</span>` +
+        `<div class="body">${parts.join(' ')}</div>`;
+      c.querySelector('.dh').onclick = () => flashSegment(segN);
+      body.appendChild(c);
+    });
+    det.appendChild(body);
+    container.appendChild(det);
+  });
+}
+
+function buildDropdown(mefNames, posNames) {
   const sel = $('mefaresh');
   sel.innerHTML = '';
   const head = document.createElement('option');
   head.value = '';
-  head.textContent = map.size ? `— בחר מפרש (${map.size}) —` : '— אין מפרשים נוספים —';
+  head.textContent = (mefNames.length + posNames.length) ? '— קפוץ למפרש —' : '— אין מפרשים —';
   sel.appendChild(head);
-
-  [...map.keys()].sort((a, b) => a.localeCompare(b, 'he')).forEach((name) => {
-    const o = document.createElement('option');
-    o.value = name;
-    o.textContent = `${name}  (${map.get(name).length})`;
-    sel.appendChild(o);
-  });
+  const grp = (label, names) => {
+    if (!names.length) return;
+    const og = document.createElement('optgroup');
+    og.label = label;
+    names.forEach((n) => {
+      const o = document.createElement('option');
+      o.value = n; o.textContent = n;
+      og.appendChild(o);
+    });
+    sel.appendChild(og);
+  };
+  grp('מפרשים', mefNames);
+  grp('פוסקים', posNames);
 }
 
-/* ── mefaresh panel ────────────────────────── */
-function openMefaresh(name) {
-  const list = state.commentators.get(name);
-  if (!list) return;
-  $('mefaresh-name').textContent = name;
-  $('mefaresh-text').innerHTML = '<div style="color:#8a7550">בחר קטע מהרשימה כדי לקפוץ למקום שעליו דיבר המפרש.</div>';
-
-  const box = $('mefaresh-list');
-  box.innerHTML = '';
-  list.forEach((ln, idx) => {
-    const segN = segNumOf(ln.anchorRef);
-    const gemHtml = segN && state.gemaraSegs[segN - 1] ? state.gemaraSegs[segN - 1] : '';
-    const dh = snippet(gemHtml) || ('סימן ' + (segN || '?'));
-    const item = document.createElement('div');
-    item.className = 'item';
-    item.innerHTML = `<span class="num">${idx + 1}.</span> ${dh} …`;
-    item.onclick = () => selectComment(ln, segN, item);
-    box.appendChild(item);
-  });
-
-  $('mefaresh-panel').classList.remove('hidden');
-}
-
-async function selectComment(ln, segN, itemEl) {
-  document.querySelectorAll('#mefaresh-list .item').forEach((n) => (n.style.background = ''));
-  if (itemEl) itemEl.style.background = '#fff3d6';
-  flashSegment(segN);
-
-  const target = $('mefaresh-text');
-  target.innerHTML = '<div class="spinner" style="margin:20px auto"></div>';
-  const res = await window.gmara.fetchText(ln.ref);
-  if (!res.ok) { target.innerHTML = '<div style="color:#7a1f1f">שגיאה בטעינת המפרש.</div>'; return; }
-  const parts = flat(res.data.he);
-  target.innerHTML = (parts.length ? parts : ['(אין טקסט)']).map((p) => `<div class="comment">${p}</div>`).join('');
-  target.scrollTop = 0;
+function jumpTo(name) {
+  const det = state.jumpTargets.get(name);
+  if (!det) return;
+  det.open = true;
+  det.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  det.querySelector('summary').style.background = 'color-mix(in srgb, var(--gold) 30%, transparent)';
+  setTimeout(() => (det.querySelector('summary').style.background = ''), 1500);
 }
 
 function flashSegment(n) {
@@ -221,13 +249,7 @@ function flashSegment(n) {
   setTimeout(() => el.classList.remove('flash'), 1800);
 }
 
-function closeMefareshPanel() {
-  $('mefaresh-panel').classList.add('hidden');
-  const sel = $('mefaresh');
-  if (sel) sel.value = '';
-}
-
-/* ── navigation ────────────────────────────── */
+/* ── navigation ──────────────────────────────── */
 function stepDaf(dir) {
   const i = state.dapim.indexOf(state.daf);
   const j = i + dir;
@@ -237,30 +259,23 @@ function stepDaf(dir) {
   loadDaf();
 }
 
-/* ── Jitsi video ───────────────────────────── */
-function roomName() {
-  return `Gmara-${state.masechet.en}-${state.daf}`.replace(/[^a-zA-Z0-9-]/g, '');
-}
-
+/* ── video ───────────────────────────────────── */
+function roomName() { return `Gmara-${state.masechet.en}-${state.daf}`.replace(/[^a-zA-Z0-9-]/g, ''); }
 function openCall() {
   $('room-input').value = roomName();
   $('call-modal').classList.remove('hidden');
   $('call-setup').style.display = 'block';
   $('jitsi-container').innerHTML = '';
 }
-
 function joinCall() {
   const room = ($('room-input').value || roomName()).trim();
   const start = () => {
     $('call-setup').style.display = 'none';
     if (state.jitsi) { try { state.jitsi.dispose(); } catch (e) {} }
     state.jitsi = new JitsiMeetExternalAPI('meet.jit.si', {
-      roomName: room,
-      parentNode: $('jitsi-container'),
-      width: '100%',
-      height: '100%',
-      configOverwrite: { startWithAudioMuted: false, prejoinPageEnabled: false },
-      interfaceConfigOverwrite: { DEFAULT_BACKGROUND: '#2a1c0c' },
+      roomName: room, parentNode: $('jitsi-container'),
+      width: '100%', height: '100%',
+      configOverwrite: { prejoinPageEnabled: false },
       userInfo: { displayName: 'חברותא' }
     });
   };
@@ -271,37 +286,46 @@ function joinCall() {
   s.onerror = () => toast('לא הצלחתי לטעון את Jitsi (בדוק אינטרנט)');
   document.head.appendChild(s);
 }
-
 function closeCall() {
   if (state.jitsi) { try { state.jitsi.dispose(); } catch (e) {} state.jitsi = null; }
   $('jitsi-container').innerHTML = '';
   $('call-modal').classList.add('hidden');
 }
 
-/* ── wire up ───────────────────────────────── */
+/* ── toggles ─────────────────────────────────── */
+function toggleFont() {
+  document.body.classList.toggle('square-comment');
+  $('fontBtn').textContent = document.body.classList.contains('square-comment') ? 'אות מרובע' : 'אות רש״י';
+}
+function cycleTheme() {
+  const cur = document.body.getAttribute('data-theme');
+  const next = THEMES[(THEMES.indexOf(cur) + 1) % THEMES.length];
+  document.body.setAttribute('data-theme', next);
+  toast('צבע: ' + ({ blue: 'כחול', red: 'אדום', classic: 'קלאסי' }[next]));
+}
+
+/* ── init ────────────────────────────────────── */
 function init() {
   buildMasechetSelect();
   buildDafSelect();
 
   $('masechet').addEventListener('change', (e) => {
     state.masechet = MASECHTOT[parseInt(e.target.value, 10)];
-    state.daf = '2a';
-    buildDafSelect();
-    loadDaf();
+    state.daf = '2a'; buildDafSelect(); loadDaf();
   });
   $('daf').addEventListener('change', (e) => { state.daf = e.target.value; loadDaf(); });
   $('prev').addEventListener('click', () => stepDaf(-1));
   $('next').addEventListener('click', () => stepDaf(1));
-  $('mefaresh').addEventListener('change', (e) => { if (e.target.value) openMefaresh(e.target.value); });
-  $('mefaresh-close').addEventListener('click', closeMefareshPanel);
+  $('mefaresh').addEventListener('change', (e) => { if (e.target.value) { jumpTo(e.target.value); e.target.value = ''; } });
 
+  $('fontBtn').addEventListener('click', toggleFont);
+  $('themeBtn').addEventListener('click', cycleTheme);
   $('callBtn').addEventListener('click', openCall);
   $('call-close').addEventListener('click', closeCall);
   $('join-btn').addEventListener('click', joinCall);
   $('fsBtn').addEventListener('click', () => toast('מסך מלא: F11'));
 
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') { closeMefareshPanel(); }
     if (e.target.tagName === 'INPUT') return;
     if (e.key === 'ArrowRight') stepDaf(-1);
     if (e.key === 'ArrowLeft') stepDaf(1);
@@ -309,5 +333,4 @@ function init() {
 
   loadDaf();
 }
-
 window.addEventListener('DOMContentLoaded', init);

@@ -6,7 +6,7 @@
   <title>גמרא</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
-<body>
+<body data-theme="blue">
   <header id="topbar">
     <div class="brand">גמרא</div>
 
@@ -26,13 +26,15 @@
     </div>
 
     <div class="control grow">
-      <label for="mefaresh">מפרשים על הדף</label>
+      <label for="mefaresh">קפוץ למפרש</label>
       <select id="mefaresh"><option value="">— טוען —</option></select>
     </div>
 
     <div class="actions">
+      <button id="fontBtn" title="החלף כתב רש״י / מרובע">אות רש״י</button>
+      <button id="themeBtn" title="החלף צבע">🎨</button>
       <button id="callBtn" title="שיחת חברותא">📹 חברותא</button>
-      <button id="fsBtn" title="מסך מלא (F11)">⛶ מסך מלא</button>
+      <button id="fsBtn" title="מסך מלא (F11)">⛶</button>
     </div>
   </header>
 
@@ -42,38 +44,43 @@
       <div class="loading-text">טוען את הדף…</div>
     </section>
 
-    <div id="daf-grid">
-      <aside class="col side" id="col-tosafot">
-        <h2 class="col-title">תוספות</h2>
-        <div class="col-body" id="tosafot-body"></div>
-      </aside>
-
-      <article class="col center" id="col-gemara">
-        <div class="daf-header">
-          <span id="daf-title"></span>
-          <span id="daf-mesorah"></span>
+    <div id="page-scroll">
+      <div id="daf-frame">
+        <div id="daf-banner">
+          <span class="corner" id="corner-r"></span>
+          <span class="banner-mid" id="banner-mid"></span>
+          <span class="corner" id="corner-l"></span>
         </div>
-        <div class="col-body" id="gemara-body"></div>
-      </article>
 
-      <aside class="col side" id="col-rashi">
-        <h2 class="col-title">רש״י</h2>
-        <div class="col-body" id="rashi-body"></div>
-      </aside>
+        <div id="daf-grid">
+          <aside class="col side" id="col-tosafot">
+            <h2 class="col-title">תוספות</h2>
+            <div class="col-body ktav-rashi" id="tosafot-body"></div>
+          </aside>
+
+          <article class="col center" id="col-gemara">
+            <div class="col-body" id="gemara-body"></div>
+          </article>
+
+          <aside class="col side" id="col-rashi">
+            <h2 class="col-title">רש״י</h2>
+            <div class="col-body ktav-rashi" id="rashi-body"></div>
+          </aside>
+        </div>
+      </div>
+
+      <section id="mefarshim-wrap" class="sections">
+        <h2 class="sections-title">מפרשי הדף</h2>
+        <div id="mefarshim-sections"></div>
+      </section>
+
+      <section id="poskim-wrap" class="sections">
+        <h2 class="sections-title">פוסקים — עין משפט נר מצוה</h2>
+        <div id="poskim-sections"></div>
+      </section>
     </div>
   </main>
 
-  <!-- מפרש נבחר -->
-  <div id="mefaresh-panel" class="panel hidden">
-    <div class="panel-head">
-      <span id="mefaresh-name"></span>
-      <button id="mefaresh-close" title="סגור">✕</button>
-    </div>
-    <div id="mefaresh-list" class="panel-list"></div>
-    <div id="mefaresh-text" class="panel-text"></div>
-  </div>
-
-  <!-- שיחת חברותא -->
   <div id="call-modal" class="modal hidden">
     <div class="modal-inner">
       <div class="modal-head">
@@ -95,6 +102,7 @@
   <div id="toast" class="toast hidden"></div>
 
   <script src="data.js"></script>
+  <script src="api.js"></script>
   <script src="renderer.js"></script>
 </body>
 </html>
