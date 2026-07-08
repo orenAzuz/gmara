@@ -151,6 +151,12 @@ select, #topbar button, #room-input {
 .col.center { background: var(--col-center-bg); }
 #col-gemara { border-inline: 1.5px solid var(--frame); }
 
+#col-tosafot { order: 1; }
+#col-gemara { order: 2; }
+#col-rashi { order: 3; }
+#daf-grid.amud-b #col-rashi { order: 1; }
+#daf-grid.amud-b #col-tosafot { order: 3; }
+
 .col-title {
   margin: 0; padding: 5px 12px; text-align: center;
   font-size: 17px; color: var(--title); font-weight: 700;

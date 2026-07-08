@@ -87,6 +87,7 @@ async function loadDaf() {
   $('corner-l').textContent = `${lbl.daf}${lbl.amud === 'א' ? '.' : ':'}`;
   $('footer-masechet').textContent = state.masechet.he;
   $('footer-daf').textContent = lbl.full;
+  $('daf-grid').classList.toggle('amud-b', lbl.amud === 'ב');
 
   const gemaraRef = `${en} ${daf}`;
   const [gem, rashi, tos, links] = await Promise.all([
