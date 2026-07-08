@@ -43,5 +43,32 @@ const Api = {
     } catch (e) {
       return { ok: false, error: String(e.message || e) };
     }
+  },
+
+  async resolveRef(q) {
+    try {
+      const d = await getJson(`${SEFARIA}/name/${encodeURIComponent(q.trim())}`);
+      return { ok: true, isRef: !!d.is_ref, ref: d.ref || null, completions: d.completions || [] };
+    } catch (e) { return { ok: false, error: String(e.message || e) }; }
+  },
+
+  async searchTalmud(q) {
+    try {
+      const res = await fetch(`${SEFARIA}/search-wrapper`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: q, type: 'text', size: 8 })
+      });
+      const d = await res.json();
+      const hits = (d.hits && d.hits.hits) || [];
+      const refs = hits.map((h) => (h._id || '').replace(/ \([^)]*\)\s*$/, '')).filter(Boolean);
+      return { ok: true, refs };
+    } catch (e) { return { ok: false, error: String(e.message || e) }; }
+  },
+
+  async findRefs(q) {
+    if (typeof window !== 'undefined' && window.gmara && window.gmara.findRefs) {
+      return window.gmara.findRefs(q);
+    }
+    return { ok: false, error: 'ai-unavailable' };
   }
 };

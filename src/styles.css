@@ -107,6 +107,28 @@ select, #topbar button, #room-input {
 #callBtn:hover { filter: brightness(1.12); }
 #fontBtn, #themeBtn, #fsBtn { background: var(--gold); color: #22150a; font-weight: 700; }
 
+/* ── search box + results ────────────────────── */
+.search-wrap { position: relative; }
+#search {
+  width: 100%; font-family: var(--serif); font-size: 16px;
+  background: #fbfaf6; color: var(--ink);
+  border: 1px solid rgba(0,0,0,.25); border-radius: 6px; padding: 5px 10px;
+}
+.search-results {
+  position: absolute; top: calc(100% + 4px); inset-inline-start: 0; inset-inline-end: 0;
+  background: var(--col-bg); border: 1px solid var(--frame); border-radius: 8px;
+  box-shadow: 0 8px 22px var(--shadow); z-index: 45; max-height: 62vh; overflow-y: auto; min-width: 360px;
+}
+.search-results.hidden { display: none; }
+.sr-head { padding: 8px 12px; font-size: 13px; color: var(--ink-soft); border-bottom: 1px solid var(--rule); }
+.sr-msg { padding: 16px; color: var(--ink-soft); }
+.sr-item { padding: 10px 12px; cursor: pointer; border-bottom: 1px solid var(--rule); }
+.sr-item:last-child { border-bottom: none; }
+.sr-item:hover { background: color-mix(in srgb, var(--gold) 18%, transparent); }
+.sr-ref { display: block; font-size: 17px; font-weight: 700; color: var(--title); }
+.sr-why { display: block; font-size: 13px; color: var(--ink-soft); margin-top: 2px; }
+.sr-dim { opacity: .55; }
+
 /* ── Scroll area ─────────────────────────────── */
 #daf-wrap { position: relative; height: calc(100% - 58px); }
 #page-scroll {

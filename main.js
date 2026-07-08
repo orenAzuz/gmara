@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain, globalShortcut } = require('electron');
 const path = require('path');
+const fs = require('fs');
 
 app.disableHardwareAcceleration();
 app.commandLine.appendSwitch('disable-gpu');
@@ -34,6 +35,55 @@ async function fetchLinks(ref) {
   const url = `${SEFARIA}/links/${toUrlRef(ref)}?with_text=0`;
   const data = await getJson(url);
   return Array.isArray(data) ? data : [];
+}
+
+function loadApiKey() {
+  if (process.env.ANTHROPIC_API_KEY) return process.env.ANTHROPIC_API_KEY;
+  const paths = [
+    path.join(__dirname, '.env'),
+    '/home/orez/Music/SoundMchine/.env'
+  ];
+  for (const p of paths) {
+    try {
+      const m = fs.readFileSync(p, 'utf8').match(/^ANTHROPIC_API_KEY=(.+)$/m);
+      if (m && m[1].trim().startsWith('sk-')) return m[1].trim();
+    } catch (e) {}
+  }
+  return null;
+}
+
+async function findRefs(question) {
+  const key = loadApiKey();
+  if (!key) return { ok: false, error: 'no-api-key' };
+  const system =
+    'You locate sources in the Babylonian Talmud (Talmud Bavli). Given a question or topic in Hebrew or English, ' +
+    'respond with ONLY valid JSON, no prose: {"results":[{"ref":"Ketubot 62b","he":"כתובות סב ע״ב","why":"one short Hebrew sentence"}]}. ' +
+    'Up to 5 most relevant Talmud Bavli locations, most relevant first, using Sefaria English ref format (e.g. "Bava Metzia 59b"). ' +
+    'Only Talmud Bavli. If nothing fits, {"results":[]}.';
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 700,
+        system,
+        messages: [{ role: 'user', content: question }]
+      })
+    });
+    if (!res.ok) return { ok: false, error: 'HTTP ' + res.status };
+    const data = await res.json();
+    let txt = (data.content && data.content[0] && data.content[0].text || '').trim();
+    txt = txt.replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
+    const parsed = JSON.parse(txt);
+    return { ok: true, results: Array.isArray(parsed.results) ? parsed.results : [] };
+  } catch (err) {
+    return { ok: false, error: String(err.message || err) };
+  }
 }
 
 function createWindow() {
@@ -83,6 +133,8 @@ ipcMain.handle('sefaria:links', async (_e, ref) => {
   try { return { ok: true, data: await fetchLinks(ref) }; }
   catch (err) { return { ok: false, error: String(err.message || err) }; }
 });
+
+ipcMain.handle('ai:findRefs', async (_e, question) => findRefs(question));
 
 app.whenReady().then(() => {
   createWindow();

@@ -35,9 +35,11 @@
       <button id="next" title="הדף הבא">הבא ◀</button>
     </div>
 
-    <div class="control grow">
-      <label for="mefaresh">קפוץ למפרש</label>
-      <select id="mefaresh"><option value="">— טוען —</option></select>
+    <div class="control grow search-wrap">
+      <label for="search">חיפוש · מקור · שאלה</label>
+      <input id="search" type="text" autocomplete="off"
+        placeholder="קידושין מא. · ברכות ב · או: איפה הסיפור על רבי עקיבא ואשתו?" />
+      <div id="search-results" class="search-results hidden"></div>
     </div>
 
     <div class="actions">

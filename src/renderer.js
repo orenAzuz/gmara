@@ -217,8 +217,6 @@ function buildSections(links) {
 
   renderSectionGroup($('poskim-sections'), pos, sortPoskim([...pos.keys()]));
   $('poskim-wrap').style.display = pos.size ? '' : 'none';
-
-  buildDropdown(mefNames, sortPoskim([...pos.keys()]));
 }
 
 const MEF_ORDER = ['רי"ף', 'רא"ש', 'מרדכי', 'ר"ן', 'רשב"א', 'ריטב"א', 'רמב"ן', 'רא"ה', 'מאירי', 'שיטה מקובצת', 'מהרש"א', 'מהר"ם', 'מהרש"ל', 'פני יהושע', 'צל"ח', 'רש"ש', 'חידושי רבי עקיבא איגר'];
@@ -410,6 +408,101 @@ function stepSefer(dir) {
   loadSefer(ref, state.view);
 }
 
+/* ── search: reference jump + content (Claude + Sefaria) ── */
+function detectAmud(q) {
+  if (/[:：]|עמוד\s*ב|ע["״'`]?\s*ב(?![א-ת])|amud\s*bet|\d+\s*b\b/i.test(q)) return 'b';
+  if (/\.|עמוד\s*א|ע["״'`]?\s*א(?![א-ת])|amud\s*alef|\d+\s*a\b/i.test(q)) return 'a';
+  return null;
+}
+
+function parseRefString(ref) {
+  if (!ref) return null;
+  const m = MASECHTOT.slice().sort((a, b) => b.en.length - a.en.length)
+    .find((x) => ref === x.en || ref.startsWith(x.en + ' '));
+  if (!m) return null;
+  const rest = ref.slice(m.en.length).trim();
+  const dm = rest.match(/^(\d+)\s*([ab])?(?::(\d+))?/);
+  if (!dm) return null;
+  const num = parseInt(dm[1], 10);
+  if (num < 2 || num > m.last) return null;
+  return { masechet: m, daf: num + (dm[2] || 'a'), seg: dm[3] ? parseInt(dm[3], 10) : null };
+}
+
+async function navigateToRef(ref) {
+  const p = parseRefString(ref);
+  if (!p) { toast('לא ניתן לנווט: ' + ref); return false; }
+  state.masechet = p.masechet;
+  state.daf = p.daf;
+  $('masechet').value = String(MASECHTOT.indexOf(p.masechet));
+  buildDafSelect();
+  $('daf').value = p.daf;
+  state.view = 'daf'; $('view').value = 'daf';
+  $('daf-stage').style.display = ''; $('mefarshim-wrap').style.display = ''; $('poskim-wrap').style.display = '';
+  $('sefer-view').classList.add('hidden');
+  await loadDaf();
+  if (p.seg) flashSegment(p.seg);
+  hideSearchResults();
+  return true;
+}
+
+async function tryNavigateRef(q) {
+  const r = await Api.resolveRef(q);
+  if (!(r.ok && r.isRef && r.ref)) return false;
+  let ref = r.ref;
+  const headNoSeg = ref.replace(/:.*$/, '');
+  if (!/[ab]$/.test(headNoSeg)) {
+    const amud = detectAmud(q);
+    ref = headNoSeg + (amud || 'a') + (ref.includes(':') ? ref.slice(ref.indexOf(':')) : '');
+  }
+  if (!parseRefString(ref)) return false;
+  await navigateToRef(ref);
+  return true;
+}
+
+async function doSearch(q) {
+  q = (q || '').trim();
+  if (!q) return;
+  showSearchResults('<div class="sr-msg">מחפש…</div>');
+  if (await tryNavigateRef(q)) return;
+
+  let results = [];
+  const ai = await Api.findRefs(q);
+  if (ai.ok && ai.results && ai.results.length) results = ai.results;
+  if (!results.length) {
+    const s = await Api.searchTalmud(q);
+    if (s.ok) results = s.refs.map((r) => ({ ref: r }));
+  }
+  if (!results.length) {
+    showSearchResults('<div class="sr-msg">לא נמצאו מקורות. נסה ניסוח אחר, או מקור מדויק (למשל: כתובות סב:).</div>');
+    return;
+  }
+  renderSearchResults(results);
+  const navigable = results.filter((r) => parseRefString(r.ref));
+  if (navigable.length) navigateToRef(navigable[0].ref);
+}
+
+function renderSearchResults(results) {
+  const box = $('search-results');
+  box.innerHTML = '<div class="sr-head">מקורות (' + results.length + ') — לחץ לניווט:</div>' +
+    results.map((r, i) => {
+      const ok = !!parseRefString(r.ref);
+      const he = r.he || r.ref;
+      const why = r.why ? `<span class="sr-why">${r.why}</span>` : '';
+      return `<div class="sr-item ${ok ? '' : 'sr-dim'}" data-ref="${r.ref}" data-ok="${ok}">` +
+        `<span class="sr-ref">${i === 0 ? '★ ' : ''}${he}</span>${why}</div>`;
+    }).join('');
+  box.querySelectorAll('.sr-item').forEach((el) => {
+    el.onclick = () => {
+      if (el.dataset.ok === 'true') navigateToRef(el.dataset.ref);
+      else toast('מקור לא זמין לניווט בבבלי: ' + el.dataset.ref);
+    };
+  });
+  box.classList.remove('hidden');
+}
+
+function showSearchResults(html) { const b = $('search-results'); b.innerHTML = html; b.classList.remove('hidden'); }
+function hideSearchResults() { $('search-results').classList.add('hidden'); }
+
 /* ── navigation ──────────────────────────────── */
 function stepDaf(dir) {
   const i = state.dapim.indexOf(state.daf);
@@ -581,7 +674,10 @@ function init() {
   $('sefer-next').addEventListener('click', () => stepSefer(1));
   $('prev').addEventListener('click', () => step(-1));
   $('next').addEventListener('click', () => step(1));
-  $('mefaresh').addEventListener('change', (e) => { if (e.target.value) { jumpTo(e.target.value); e.target.value = ''; } });
+  const searchEl = $('search');
+  searchEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); doSearch(searchEl.value); } });
+  searchEl.addEventListener('focus', () => { if ($('search-results').innerHTML.trim()) $('search-results').classList.remove('hidden'); });
+  document.addEventListener('click', (e) => { if (!e.target.closest('.search-wrap')) hideSearchResults(); });
 
   $('fontBtn').addEventListener('click', toggleFont);
   $('themeBtn').addEventListener('click', cycleTheme);
