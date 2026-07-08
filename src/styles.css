@@ -312,6 +312,14 @@ summary .count { font-size: 13px; color: var(--gold); font-weight: 700; }
 .mef-comment .body { font-family: var(--rashi); font-size: 17px; line-height: 1.7; text-align: justify; }
 body.square-comment .mef-comment .body { font-family: var(--serif); }
 
+/* Mesorat HaShas cross-references */
+details.mesoret > summary { color: var(--gold); background: color-mix(in srgb, var(--gold) 14%, transparent); }
+.xref { display: flex; align-items: baseline; gap: 8px; padding: 7px 4px; cursor: pointer; border-bottom: 1px dashed var(--rule); font-size: 15px; }
+.xref:last-child { border-bottom: none; }
+.xref:hover { background: color-mix(in srgb, var(--gold) 16%, transparent); }
+.xref-tag { font-size: 11px; color: var(--gold); font-weight: 700; min-width: 36px; }
+.xref-he { color: var(--title); font-weight: 600; }
+
 /* ── Loading overlay ─────────────────────────── */
 .overlay {
   position: absolute; inset: 0;
@@ -362,7 +370,12 @@ body.square-comment .mef-comment .body { font-family: var(--serif); }
 .enlarge:hover { background: color-mix(in srgb, var(--gold) 30%, transparent); }
 
 /* reading modal */
-.read-inner { width: 74%; height: 86%; }
+.read-inner { width: 90%; height: 92%; }
+.read-sec {
+  font-family: var(--serif); font-size: 0.8em; font-weight: 800; color: var(--title);
+  border-top: 1px solid var(--rule); margin: 20px 0 8px; padding-top: 8px;
+}
+.read-gemara { font-family: var(--serif); font-weight: 500; }
 .read-tools { display: flex; gap: 8px; align-items: center; }
 .read-tools button {
   background: var(--gold); color: #22150a; border: none; border-radius: 6px;

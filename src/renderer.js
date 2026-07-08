@@ -9,7 +9,8 @@ const state = {
   jitsi: null,
   view: 'daf',
   seferSegs: [],
-  seferNav: { prev: null, next: null }
+  seferNav: { prev: null, next: null },
+  history: []
 };
 
 const WORKS = {
@@ -225,6 +226,8 @@ function buildSections(links) {
   mefNames.forEach((name, i) => {
     (i % 2 === 0 ? right : left).appendChild(makeMefBox(name, mef.get(name), { open: false }));
   });
+  const mesoret = collectMesoret(links);
+  if (mesoret.length) right.insertBefore(makeMesoretBox(mesoret), right.firstChild);
   $('mefarshim-wrap').style.display = 'none';
 
   renderSectionGroup($('poskim-sections'), pos, sortPoskim([...pos.keys()]));
@@ -311,6 +314,59 @@ function sortPoskim(arr) {
 function renderSectionGroup(container, map, names) {
   container.innerHTML = '';
   names.forEach((name) => container.appendChild(makeMefBox(name, map.get(name), { open: false })));
+}
+
+function collectMesoret(links) {
+  const seen = new Set(), out = [];
+  const CATS = ['Talmud', 'Mishnah', 'Tanakh', 'Midrash'];
+  for (const ln of links) {
+    if (!ln || !CATS.includes(ln.category)) continue;
+    const ref = ln.ref;
+    if (!ref || seen.has(ref)) continue;
+    seen.add(ref);
+    out.push({ ref, he: ln.sourceHeRef || ref, cat: ln.category, seg: segNumOf(ln.anchorRef) || 0 });
+  }
+  return out.sort((a, b) => a.seg - b.seg);
+}
+
+function makeMesoretBox(list) {
+  const det = document.createElement('details');
+  det.className = 'mef mesoret';
+  det.open = true;
+  const sum = document.createElement('summary');
+  sum.innerHTML = `<span>מסורת הש״ס</span><span class="count">${list.length}</span>`;
+  det.appendChild(sum);
+  const body = document.createElement('div');
+  body.className = 'mef-body';
+  const tag = { Talmud: 'גמ׳', Mishnah: 'משנה', Tanakh: 'פסוק', Midrash: 'מדרש' };
+  list.forEach((m) => {
+    const it = document.createElement('div');
+    it.className = 'xref';
+    it.title = m.ref;
+    it.innerHTML = `<span class="xref-tag">${tag[m.cat] || ''}</span><span class="xref-he">${m.he}</span>`;
+    it.onclick = () => openXref(m);
+    body.appendChild(it);
+  });
+  det.appendChild(body);
+  return det;
+}
+
+function openXref(m) {
+  if (m.seg) flashSegment(m.seg);
+  if (m.cat === 'Talmud' && parseRefString(m.ref)) navigateToRef(m.ref);
+  else openRefText(m.ref, m.he);
+}
+
+async function openRefText(ref, heRef) {
+  $('read-title').textContent = heRef || ref;
+  $('read-body').innerHTML = '<div class="spinner" style="margin:30px auto"></div>';
+  $('read-modal').classList.remove('hidden');
+  const r = await Api.fetchText(ref);
+  const parts = r.ok ? flat(r.data.he) : [];
+  $('read-body').innerHTML = parts.length
+    ? parts.map((p) => `<div class="read-text">${p}</div>`).join('')
+    : '<div class="read-text" style="color:var(--ink-soft)">אין טקסט זמין למקור זה.</div>';
+  setReadFS(readFS);
 }
 
 function buildDropdown(mefNames, posNames) {
@@ -444,9 +500,34 @@ function parseRefString(ref) {
   return { masechet: m, daf: num + (dm[2] || 'a'), seg: dm[3] ? parseInt(dm[3], 10) : null };
 }
 
+function pushHistory() {
+  state.history.push({ mi: MASECHTOT.indexOf(state.masechet), daf: state.daf, view: state.view });
+  if (state.history.length > 60) state.history.shift();
+}
+
+async function goBack() {
+  if (!state.history.length) { toast('אין דף קודם'); return; }
+  const loc = state.history.pop();
+  state.masechet = MASECHTOT[loc.mi];
+  state.daf = loc.daf;
+  state.view = loc.view;
+  $('masechet').value = String(loc.mi);
+  buildDafSelect();
+  $('daf').value = loc.daf;
+  $('view').value = loc.view;
+  if (loc.view === 'daf') {
+    $('daf-stage').style.display = ''; $('mefarshim-wrap').style.display = ''; $('poskim-wrap').style.display = '';
+    $('sefer-view').classList.add('hidden');
+    await loadDaf();
+  } else {
+    switchView(loc.view);
+  }
+}
+
 async function navigateToRef(ref) {
   const p = parseRefString(ref);
   if (!p) { toast('לא ניתן לנווט: ' + ref); return false; }
+  pushHistory();
   state.masechet = p.masechet;
   state.daf = p.daf;
   $('masechet').value = String(MASECHTOT.indexOf(p.masechet));
@@ -762,12 +843,15 @@ function setDafScale(v) {
   document.body.style.setProperty('--daf-scale', dafScale.toFixed(2));
   requestAnimationFrame(layoutTz);
 }
-function toggleFocus() {
-  document.body.classList.toggle('focus-daf');
-  const on = document.body.classList.contains('focus-daf');
-  $('focusBtn').textContent = on ? '↩ יציאה' : '📖 מיקוד';
-  if (on && dafScale < 1) setDafScale(1);
-  requestAnimationFrame(layoutTz);
+function openReadDaf() {
+  $('read-title').textContent = state.masechet.he + ' · ' + amudLabel(state.daf).full;
+  const gem = state.gemaraSegs.map((s) => boldDH(s)).join(' ');
+  $('read-body').innerHTML =
+    `<div class="read-text read-gemara">${gem || '—'}</div>` +
+    `<div class="read-sec">${$('rashi-title').textContent}</div><div class="read-text ktav-rashi">${$('rashi-body').innerHTML}</div>` +
+    `<div class="read-sec">${$('tosafot-title').textContent}</div><div class="read-text ktav-rashi">${$('tosafot-body').innerHTML}</div>`;
+  setReadFS(readFS);
+  $('read-modal').classList.remove('hidden');
 }
 
 /* ── init ────────────────────────────────────── */
@@ -785,6 +869,7 @@ function init() {
   $('view').addEventListener('change', (e) => switchView(e.target.value));
   $('sefer-prev').addEventListener('click', () => stepSefer(-1));
   $('sefer-next').addEventListener('click', () => stepSefer(1));
+  $('backBtn').addEventListener('click', goBack);
   $('prev').addEventListener('click', () => step(-1));
   $('next').addEventListener('click', () => step(1));
   const searchEl = $('search');
@@ -797,7 +882,7 @@ function init() {
   $('themeBtn').addEventListener('click', cycleTheme);
   $('zoomIn').addEventListener('click', () => setDafScale(dafScale + 0.15));
   $('zoomOut').addEventListener('click', () => setDafScale(dafScale - 0.15));
-  $('focusBtn').addEventListener('click', toggleFocus);
+  $('focusBtn').addEventListener('click', openReadDaf);
   $('readBtn').addEventListener('click', toggleRead);
   $('voiceBtn').addEventListener('click', toggleVoice);
   $('call-close').addEventListener('click', closeCall);
