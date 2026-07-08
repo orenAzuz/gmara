@@ -211,7 +211,7 @@ function buildSections(links) {
   const right = $('otzar-right'), left = $('otzar-left');
   right.innerHTML = ''; left.innerHTML = '';
   mefNames.forEach((name, i) => {
-    (i % 2 === 0 ? right : left).appendChild(makeMefBox(name, mef.get(name), { open: true }));
+    (i % 2 === 0 ? right : left).appendChild(makeMefBox(name, mef.get(name), { open: false }));
   });
   $('mefarshim-wrap').style.display = 'none';
 
@@ -388,7 +388,7 @@ async function loadSefer(ref, view) {
   const names = [...nosei.keys()];
   names.forEach((name, i) => {
     (i % 2 === 0 ? $('sefer-right') : $('sefer-left'))
-      .appendChild(makeMefBox(name, nosei.get(name), { open: true, segs: state.seferSegs, onJump: flashSeferSeg }));
+      .appendChild(makeMefBox(name, nosei.get(name), { open: false, segs: state.seferSegs, onJump: flashSeferSeg }));
   });
   $('page-scroll').scrollTop = 0;
 }
@@ -657,6 +657,18 @@ function cycleTheme() {
   toast('צבע: ' + ({ blue: 'כחול', red: 'אדום', classic: 'קלאסי' }[next]));
 }
 
+let dafScale = 1;
+function setDafScale(v) {
+  dafScale = Math.max(0.7, Math.min(2.2, v));
+  document.body.style.setProperty('--daf-scale', dafScale.toFixed(2));
+}
+function toggleFocus() {
+  document.body.classList.toggle('focus-daf');
+  const on = document.body.classList.contains('focus-daf');
+  $('focusBtn').textContent = on ? '↩ יציאה' : '📖 מיקוד';
+  if (on && dafScale < 1) setDafScale(1);
+}
+
 /* ── init ────────────────────────────────────── */
 function init() {
   buildMasechetSelect();
@@ -681,6 +693,9 @@ function init() {
 
   $('fontBtn').addEventListener('click', toggleFont);
   $('themeBtn').addEventListener('click', cycleTheme);
+  $('zoomIn').addEventListener('click', () => setDafScale(dafScale + 0.15));
+  $('zoomOut').addEventListener('click', () => setDafScale(dafScale - 0.15));
+  $('focusBtn').addEventListener('click', toggleFocus);
   $('call-close').addEventListener('click', closeCall);
   $('join-btn').addEventListener('click', joinCall);
   $('fsBtn').addEventListener('click', () => toast('מסך מלא: F11'));
