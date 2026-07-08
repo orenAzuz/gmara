@@ -1,0 +1,15 @@
+{
+  "projects": {
+    "default": "dawjam-126b1"
+  },
+  "targets": {
+    "dawjam-126b1": {
+      "hosting": {
+        "gmara": [
+          "gmara-daf"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}
