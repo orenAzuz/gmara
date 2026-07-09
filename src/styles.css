@@ -183,11 +183,11 @@ body.focus-daf #focusBtn { background: var(--title); color: #fff; }
   box-shadow: 0 2px 12px rgba(30, 20, 5, .1);
 }
 #gemara-body {
-  font-size: calc(25px * var(--daf-scale)); color: var(--ink);
-  font-weight: 500; line-height: 1.78; text-align: justify;
+  font-size: calc(26px * var(--daf-scale)); color: var(--ink);
+  font-weight: 500; line-height: 1.72; text-align: justify;
 }
 .tz-side { width: 50%; box-sizing: border-box; padding: 4px 12px; color: var(--ink); }
-.tz-side > div { font-size: calc(17.5px * var(--daf-scale)); line-height: 1.62; text-align: justify; }
+.tz-side > div { font-size: calc(17px * var(--daf-scale)); line-height: 1.46; text-align: justify; }
 .tz-rashi { float: left; }
 .tz-tosafot { float: right; }
 .tz-notch { width: 54%; height: calc(var(--gm-h) + 10px); }
@@ -207,9 +207,9 @@ body.focus-daf #focusBtn { background: var(--title); color: #fff; }
 .incipit {
   display: block; text-align: center; margin: 2px auto 16px;
   padding: 8px 14px; max-width: 66%;
-  font-family: var(--serif); font-size: calc(30px * var(--daf-scale)); font-weight: 800; color: var(--title);
+  font-family: var(--serif); font-size: calc(30px * var(--daf-scale)); font-weight: 800; color: var(--ink);
   border: 1px solid var(--rule); border-radius: 10px;
-  background: color-mix(in srgb, var(--gold) 10%, var(--col-center-bg));
+  background: color-mix(in srgb, var(--gold) 7%, var(--col-center-bg));
   letter-spacing: 3px;
 }
 
